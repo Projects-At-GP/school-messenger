@@ -1,0 +1,9 @@
+# Saves
+saves/*
+
+# Logs
+*.log
+
+# Database Files
+*.sqlite
+*.db
