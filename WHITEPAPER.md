@@ -29,7 +29,7 @@ Token:          <YOUR TOKEN>
 ## Get Token
 Of course you need an access token for the `Authorization`.
 There a two ways to get the token:
-1. by [Registration](##Registration) you can read it from the response or
+1. by [Registration](#Registration) you can read it from the response or
 2. by using the `users/me/token`-endpoint:
 ```yml
 GET users/me/token
