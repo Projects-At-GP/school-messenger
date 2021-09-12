@@ -130,7 +130,7 @@ All used status codes by the messenger:
 | 200  | OK                                                  | Yes            |
 | 201  | Created                                             | Yes            |
 | 204  | No Content (nothing to say...)                      | Yes            |
-| 400  | Bad Request                                         | No             |
+| 400  | Bad Request (mal formed Header)                     | No             |
 | 401  | Unauthorized (missing `Authorization`/`User-Agent`) | No             |
 | 403  | Forbidden                                           | No             |
 | 404  | Not Found                                           | No             |
