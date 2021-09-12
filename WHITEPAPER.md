@@ -3,13 +3,16 @@
 ## Overwiew
 - [Connection](#connection)
 - [Header](#header)
-- [Account Info](#account-info)
-- [Create Account](#create-account)
-- [Delete Account](#delete-account)
+- [Account](#account)
+  - [Info](#account-info)
+  - [Create](#create-account)
+  - [Delete](#delete-account)
 - [Get Token](#get-token)
-- [Send Messages](#send-messages)
-- [Fetch Messages](#fetch-messages)
+- [Messages](#messages)
+  - [Send](#send-messages)
+  - [Fetch](#fetch-messages)
 - [ID](#id)
+  - [Types](#id-types)
 - [Status Codes](#status-codes)
 
 ## Connection
@@ -25,7 +28,8 @@ Authorization:  User <YOUR TOKEN>
 User-Agent:     SchoolMessengerExamples Python3.9
 ```
 
-## Account Info
+## Account
+### Account Info
 You can gain information about accounts by using the `users/info`-endpoint.
 ```yml
 GET users/info
@@ -42,7 +46,7 @@ name:           <USER NAME>
 id:             <USER ID>
 ```
 
-## Create Account
+### Create Account
 You have to create an account to get an acces token to use the messenger.
 ```yml
 PUT users/registration/new
@@ -55,7 +59,7 @@ Status Code:    201
 Token:          <YOUR TOKEN>
 ```
 
-## Delete Account
+### Delete Account
 Deletes your account.
 **THIS ACTION CANNOT MADE UNDONE!!!**
 ```yml
@@ -83,7 +87,8 @@ Token:          <TOKEN>
 ```
 **Recommendation: you can store the token after registration ;)**
 
-## Send Messages
+## Messages
+### Send Messages
 You can send messages by using the `messages/new`-endpoint.
 ```yml
 POST messages/new
@@ -94,7 +99,7 @@ Status Code:    201
 ID:             <MESSAGE ID>
 ```
 
-## Fetch Messages
+### Fetch Messages
 You can fetch messages by using the `messages/fetch`-endpoint.
 ```yml
 GET messages/fetch
@@ -122,6 +127,13 @@ Technical:
 | **Retrieval**   | ( `ID` >> 15 ) + `EPOCH`                         | (`ID` & F800 ) >> 0x1F        | `ID` & 0x7FF                     |
 
 The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
+
+### ID Types
+| Value | Type      |
+|:-----:|:----------|
+| **0** | undefined |
+| **1** | user      |
+| **2** | message   |
 
 ## Status Codes
 All used status codes by the messenger:
