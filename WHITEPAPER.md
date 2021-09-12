@@ -36,7 +36,7 @@ If you want to know who you are (have only your token from [here](#get-token)) y
 GET users/whoami
 ```
 All of these examples have the following response:
-```
+```yml
 Status Code:    200
 name:           <USER NAME>
 id:             <USER ID>
@@ -124,7 +124,7 @@ Technical:
 The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
 
 ## Status Codes
-All used stauts codes by the messenger:
+All used status codes by the messenger:
 | Code | Meaning                                             | Everything OK? |
 |:----:|:----------------------------------------------------|:--------------:|
 | 200  | OK                                                  | Yes            |
