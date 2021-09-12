@@ -3,8 +3,8 @@
 ## Overwiew
 - [Connection](#connection)
 - [Header](#header)
-- [Get Token](#get-token)
 - [Registration](#registration)
+- [Get Token](#get-token)
 - [Send Messages](#send-messages)
 - [Fetch Messages](#fetch-messages)
 - [ID](#id)
