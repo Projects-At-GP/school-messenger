@@ -1,13 +1,13 @@
 # School Messenger
 
 ## Overwiew
-- [Connection](#Connection)
-- [Header](#Header)
-- [Registration](#Registration)
-- [Get Token](#Get%20Token)
-- [Send Messages](#Send%20Messages)
-- [Fetch Messages](#Fetch%20Messages)
-- [ID](#ID)
+- [Connection](#connection)
+- [Header](#header)
+- [Get Token](#get-token)
+- [Registration](#registration)
+- [Send Messages](#send-messages)
+- [Fetch Messages](#fetch-messages)
+- [ID](#id)
 
 ## Connection
 > ***`TODO`***
@@ -23,7 +23,7 @@ User-Agent:     SchoolMessengerExamples Python3.9
 ```
 
 ## Registration
-You must be registrated to get an access token
+You must be registrated to get an access token.
 ```yml
 PUT users/registration/new
 name:           <YOUR NAME>
@@ -53,7 +53,7 @@ Token:          <TOKEN>
 **Recommendation: you can store the token after registration ;)**
 
 ## Send Messages
-You can send messages by using the `messages/new`.
+You can send messages by using the `messages/new`-endpoint.
 ```yml
 POST messages/new
 content:        Hey everyone!\nThis is my first message!
@@ -64,7 +64,7 @@ ID:             <MESSAGE ID>
 ```
 
 ## Fetch Messages
-You can fetch messages by using the `messages/fetch`.
+You can fetch messages by using the `messages/fetch`-endpoint.
 ```yml
 GET messages/fetch
 amount:         <MAX. AMOUNT (-1 to get all) = 20>
@@ -77,4 +77,17 @@ messages:       [{'id': '<MESSAGE ID>', 'content': '<MESSAGE CONTENT>', 'author'
 ```
 
 ## ID
-> ***`TODO`***
+The IDs used in the messenger.
+
+Technical:
+- unsigned 64 bit integer
+
+| Field           | Timestamp (UTC)                                  | Type                          | Increment                        |
+|:----------------|:-------------------------------------------------|:------------------------------|:---------------------------------|
+| **Binary**      | 000000000000000000000000000000000000000000000000 | 00000                         | 00000000000                      |
+| **Bits**        | 63 to 15                                         | 15 to 11                      | 11 to 0                          |
+| **Total Bits**  | 48                                               | 5                             | 11                               |
+| **Description** | ms since `EPOCH`                                 | the type (message, user, ...) | increment to prevend doubled IDs |
+| **Retrieval**   | ( `ID` >> 15 ) + `EPOCH`                         | (`ID` & F800 ) >> 0x1F        | `ID` & 0x7FF                     |
+
+The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
