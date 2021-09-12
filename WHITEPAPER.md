@@ -3,11 +3,14 @@
 ## Overwiew
 - [Connection](#connection)
 - [Header](#header)
-- [Registration](#registration)
+- [Account Info](#account-info)
+- [Create Account](#create-account)
+- [Delete Account](#delete-account)
 - [Get Token](#get-token)
 - [Send Messages](#send-messages)
 - [Fetch Messages](#fetch-messages)
 - [ID](#id)
+- [Status Codes](#status-codes)
 
 ## Connection
 > ***`TODO`***
@@ -22,8 +25,25 @@ Authorization:  User <YOUR TOKEN>
 User-Agent:     SchoolMessengerExamples Python3.9
 ```
 
-## Registration
-You must be registrated to get an access token.
+## Account Info
+You can gain information about accounts by using the `users/info`-endpoint.
+```yml
+GET users/info
+query:          <USER NAME OR USER ID>
+```
+If you want to know who you are (have only your token from [here](#get-token)) you can use the `users/whoami`-endpoint.
+```yml
+GET users/whoami
+```
+All of these examples have the following response:
+```
+Status Code:    200
+name:           <USER NAME>
+id:             <USER ID>
+```
+
+## Create Account
+You have to create an account to get an acces token to use the messenger.
 ```yml
 PUT users/registration/new
 name:           <YOUR NAME>
@@ -31,8 +51,19 @@ password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 ```yml
-Status Code:    200
+Status Code:    201
 Token:          <YOUR TOKEN>
+```
+
+## Delete Account
+Deletes your account.
+**THIS ACTION CANNOT MADE UNDONE!!!**
+```yml
+DELETE users/registration/delete
+password:       <YOUR PASSWORD>
+```
+```yml
+Status Code:    204
 ```
 
 ## Get Token
@@ -59,7 +90,7 @@ POST messages/new
 content:        Hey everyone!\nThis is my first message!
 ```
 ```yml
-Status Code:    200
+Status Code:    201
 ID:             <MESSAGE ID>
 ```
 
@@ -91,3 +122,18 @@ Technical:
 | **Retrieval**   | ( `ID` >> 15 ) + `EPOCH`                         | (`ID` & F800 ) >> 0x1F        | `ID` & 0x7FF                     |
 
 The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
+
+## Status Codes
+All used stauts codes by the messenger:
+| Code | Meaning                                             | Everything OK? |
+|:----:|:----------------------------------------------------|:--------------:|
+| 200  | OK                                                  | Yes            |
+| 201  | Created                                             | Yes            |
+| 204  | No Content (nothing to say...)                      | Yes            |
+| 400  | Bad Request                                         | No             |
+| 401  | Unauthorized (missing `Authorization`/`User-Agent`) | No             |
+| 403  | Forbidden                                           | No             |
+| 404  | Not Found                                           | No             |
+| 405  | Method Not Allowed                                  | No             |
+| 406  | Not Acceptable (wrong headers)                      | No             |
+| 5XX  | Internal Server Error (sorry if you see them)       | No             |
