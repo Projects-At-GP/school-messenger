@@ -1,6 +1,6 @@
 # School Messenger
 
-## Overwiew
+## Overview
 - [Connection](#connection)
 - [Header](#header)
 - [Account](#account)
@@ -47,7 +47,7 @@ id:             <USER ID>
 ```
 
 ### Create Account
-You have to create an account to get an acces token to use the messenger.
+You have to create an account to get an access token to use the messenger.
 ```yml
 POST users/registration/new
 name:           <YOUR NAME>
@@ -61,7 +61,7 @@ Token:          <YOUR TOKEN>
 
 ### Delete Account
 Deletes your account.
-**THIS ACTION CANNOT MADE UNDONE!!!**
+**THIS ACTION CANNOT MAKE UNDONE!!!**
 ```yml
 DELETE users/registration/delete
 password:       <YOUR PASSWORD>
@@ -71,8 +71,8 @@ Status Code:    204
 ```
 
 ## Get Token
-Of course you need an access token for the `Authorization`.
-There a two ways to get the token:
+Of course, you need an access token for the `Authorization`.
+There two ways to get the token:
 1. by [Registration](#create-account) you can read it from the response or
 2. by using the `users/me/token`-endpoint:
 ```yml
@@ -123,10 +123,10 @@ Technical:
 | **Binary**      | 000000000000000000000000000000000000000000000000 | 00000                         | 00000000000                      |
 | **Bits**        | 63 to 15                                         | 15 to 11                      | 11 to 0                          |
 | **Total Bits**  | 48                                               | 5                             | 11                               |
-| **Description** | ms since `EPOCH`                                 | the type (message, user, ...) | increment to prevend doubled IDs |
+| **Description** | ms since `EPOCH`                                 | the type (message, user, ...) | increment to prevent doubled IDs |
 | **Retrieval**   | ( `ID` >> 15 ) + `EPOCH`                         | (`ID` & F800 ) >> 0x1F        | `ID` & 0x7FF                     |
 
-The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
+The above-mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
 
 ### ID Types
 | Value | Type      |
