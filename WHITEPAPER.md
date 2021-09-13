@@ -49,7 +49,7 @@ id:             <USER ID>
 ### Create Account
 You have to create an account to get an acces token to use the messenger.
 ```yml
-PUT users/registration/new
+POST users/registration/new
 name:           <YOUR NAME>
 password:       <YOUR PASSWORD>
 ```
