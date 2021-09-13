@@ -137,6 +137,7 @@ The above mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021
 
 ## Status Codes
 All used status codes by the messenger:
+
 | Code | Meaning                                             | Everything OK? |
 |:----:|:----------------------------------------------------|:--------------:|
 | 200  | OK                                                  | Yes            |

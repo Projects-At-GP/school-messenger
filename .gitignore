@@ -1,5 +1,5 @@
 # Saves
-saves/*
+saves/
 
 # Logs
 *.log
@@ -7,3 +7,6 @@ saves/*
 # Database Files
 *.sqlite
 *.db
+
+# PyCharm
+.idea/
