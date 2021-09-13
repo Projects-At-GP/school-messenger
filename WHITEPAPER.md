@@ -92,7 +92,7 @@ Token:          <TOKEN>
 You can send messages by using the `messages/new`-endpoint.
 ```yml
 POST messages/new
-content:        Hey everyone!\nThis is my first message!
+content:        Hello World!\nThis is my first message!
 ```
 ```yml
 Status Code:    201
