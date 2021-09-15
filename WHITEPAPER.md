@@ -12,6 +12,7 @@
     - [Send](#send-messages)
     - [Fetch](#fetch-messages)
 - [ID](#id)
+    - [Technical](#id-technical)
     - [Types](#id-types)
 - [Status Codes](#status-codes)
 
@@ -41,7 +42,7 @@ GET users/whoami
 ```
 All of these examples have the following response:
 ```yml
-Status Code:    200
+Status:         200
 name:           <USER NAME>
 id:             <USER ID>
 ```
@@ -49,13 +50,13 @@ id:             <USER ID>
 ### Create Account
 You have to create an account to get an access token to use the messenger.
 ```yml
-POST users/registration/new
+POST users/registration
 name:           <YOUR NAME>
 password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 ```yml
-Status Code:    201
+Status:         201
 Token:          <YOUR TOKEN>
 ```
 
@@ -63,11 +64,11 @@ Token:          <YOUR TOKEN>
 Deletes your account.
 **THIS ACTION CANNOT MAKE UNDONE!!!**
 ```yml
-DELETE users/registration/delete
+DELETE users/registration
 password:       <YOUR PASSWORD>
 ```
 ```yml
-Status Code:    204
+Status:         204
 ```
 
 ## Get Token
@@ -82,40 +83,40 @@ password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 ```yml
-Status Code:    200
+Status:         200
 Token:          <TOKEN>
 ```
 **Recommendation: you can store the token after registration ;)**
 
 ## Messages
 ### Send Messages
-You can send messages by using the `messages/new`-endpoint.
+You can send messages by using the `messages`-endpoint.
 ```yml
-POST messages/new
+POST messages
 content:        Hello World!\nThis is my first message!
 ```
 ```yml
-Status Code:    201
+Status:         201
 ID:             <MESSAGE ID>
 ```
 
 ### Fetch Messages
-You can fetch messages by using the `messages/fetch`-endpoint.
+You can fetch messages by using the `messages`-endpoint.
 ```yml
-GET messages/fetch
+GET messages
 amount:         <MAX. AMOUNT (-1 to get all) = 20>
 before:         <UTC-TIMESTAMP = -1>
 after:          <UTC-TIMESTAMP = -1>
 ```
 ```yml
-Status Code:    200
+Status:         200
 messages:       [{'id': '<MESSAGE ID>', 'content': '<MESSAGE CONTENT>', 'author': {'id': '<AUTHOR ID>', 'name': '<AUTHOR NAME>'}}, ...]
 ```
 
 ## ID
 The IDs used in the messenger.
 
-Technical:
+### ID Technical
 - unsigned 64 bit integer
 
 | Field           | Timestamp (UTC)                                  | Type                          | Increment                        |
