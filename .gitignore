@@ -10,3 +10,7 @@ saves/
 
 # PyCharm
 .idea/
+
+# PipEnv
+Pipfile
+Pipfile.lock
