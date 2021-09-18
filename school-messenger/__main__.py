@@ -45,7 +45,8 @@ def messages(request: APIRequest):
     if request.method == "POST":
         return 201, {"ID": ""}
     if request.method == "GET":
-        return {"messages": [{"id": "", "content": "", "author": {"id": "", "name": ""}}]}
+        return {"messages": [{"id": "", "content": "", "author": {"id": "", "name": ""}},
+                             {"id": "", "content": "", "author": {"id": "", "name": ""}}]}
 
 
 api(debug=True)
