@@ -1,7 +1,7 @@
 from NAA import APIRequest
 from NAA.web import API
 
-from .utils import is_authorized
+from school_messenger.utils import is_authorized
 
 
 api = API("0.0.0.0", 3333, name="School Messenger")
