@@ -49,4 +49,4 @@ def messages(request: APIRequest):
                              {"id": "", "content": "", "author": {"id": "", "name": ""}}]}
 
 
-api(debug=True)
+api(debug=True, reload=True)
