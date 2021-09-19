@@ -2,7 +2,7 @@ from NAA import APIRequest
 from NAA.web import API
 
 
-api = API("127.0.0.1", 2345, name="School Messenger")
+api = API("0.0.0.0", 3333, name="School Messenger")
 
 
 @api.add(ignore_invalid_methods=True)

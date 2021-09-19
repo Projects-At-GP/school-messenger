@@ -17,7 +17,9 @@
 - [Status Codes](#status-codes)
 
 ## Connection
-> ***`TODO`***
+You can connect by just calling the API.
+The HOST and PORT must be provided by the host, but by default you can use the PORT `3333`.
+> Note: at the moment the connection goes over **`HTTP`** and *not* `HTTPS`
 
 ## Header
 The header *must* contain `Authorization` and `User-Agent` on every request.
@@ -41,10 +43,13 @@ If you want to know who you are (have only your token from [here](#get-token)) y
 GET users/whoami
 ```
 All of these examples have the following response:
-```yml
-Status:         200
-name:           <USER NAME>
-id:             <USER ID>
+
+> Status: 200
+```json
+{
+  "name": "<USER NAME>",
+  "id": "<USER ID>"
+}
 ```
 
 ### Create Account
@@ -55,9 +60,12 @@ name:           <YOUR NAME>
 password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
-```yml
-Status:         201
-Token:          <YOUR TOKEN>
+
+> Status: 201
+```json
+{
+  "Token": "<TOKEN>"
+}
 ```
 
 ### Delete Account
@@ -67,9 +75,9 @@ Deletes your account.
 DELETE users/registration
 password:       <YOUR PASSWORD>
 ```
-```yml
-Status:         204
-```
+
+> Status: 204
+
 
 ## Get Token
 Of course, you need an access token for the `Authorization`.
@@ -82,9 +90,12 @@ name:           <YOUR NAME>
 password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
-```yml
-Status:         200
-Token:          <TOKEN>
+
+> Status: 200
+```json
+{
+  "Token": "<TOKEN>"
+}
 ```
 **Recommendation: you can store the token after registration ;)**
 
@@ -95,9 +106,12 @@ You can send messages by using the `messages`-endpoint.
 POST messages
 content:        Hello World!\nThis is my first message!
 ```
-```yml
-Status:         201
-ID:             <MESSAGE ID>
+
+> Status: 201
+```json
+{
+  "id": "<MESSAGE ID>"
+}
 ```
 
 ### Fetch Messages
@@ -108,9 +122,22 @@ amount:         <MAX. AMOUNT (-1 to get all) = 20>
 before:         <UTC-TIMESTAMP = -1>
 after:          <UTC-TIMESTAMP = -1>
 ```
-```yml
-Status:         200
-messages:       [{'id': '<MESSAGE ID>', 'content': '<MESSAGE CONTENT>', 'author': {'id': '<AUTHOR ID>', 'name': '<AUTHOR NAME>'}}, ...]
+
+> Status: 200
+```json
+{
+  "messages": [
+    {
+      "id": "<MESSAGE ID>", 
+      "content": "<MESSAGE CONTENT>", 
+      "author": {
+        "id": "<AUTHOR ID>", 
+        "name": "<AUTHOR NAME>"
+      }
+    },
+    ...
+  ]
+}
 ```
 
 ## ID
