@@ -1,10 +1,11 @@
 from NAA import APIRequest
 from NAA.web import API
 
-from school_messenger.utils import is_authorized
+from school_messenger.utils import is_authorized, has_user_agent
 
 
 api = API("0.0.0.0", 3333, name="School Messenger")
+api.add_global_request_check(401)(has_user_agent)
 
 
 @api.add(ignore_invalid_methods=True)

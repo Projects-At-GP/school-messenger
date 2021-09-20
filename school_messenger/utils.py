@@ -1,6 +1,7 @@
 
 __all__ = (
     "is_authorized",
+    "has_user_agent"
 )
 
 
