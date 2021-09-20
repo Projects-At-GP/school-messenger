@@ -1,16 +1,20 @@
+import datetime
+
 
 __all__ = (
     "is_authorized",
-    "has_user_agent"
+    "has_user_agent",
+    "generate_id"
 )
 
 
-def is_authorized(request, *, authorization_key="Authorization"):
+def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
     """
     Parameters
     ----------
     request: NAA.APIRequest
     authorization_key: str
+    valid: typing.Iterable[str]
 
     Returns
     -------
@@ -42,3 +46,27 @@ def has_user_agent(request, *, user_agent_key="User-Agent", min_user_agent_len=2
         return True
     except AssertionError:
         return False
+
+
+__INCREMENT = -1
+
+
+def generate_id(type=0):  # noqa
+    """
+    Parameters
+    ----------
+    type: int
+
+    Returns
+    -------
+    int
+    """
+    global __INCREMENT
+    if __INCREMENT == 2047:
+        __INCREMENT = 0
+    else:
+        __INCREMENT += 1
+    increment = __INCREMENT
+    now = datetime.datetime.utcnow()
+    unix = (now - datetime.datetime(1970, 1, 1)).total_seconds()
+    return (int(unix * 1000 - 1609455600000) << 15) + (type << 11) + increment
