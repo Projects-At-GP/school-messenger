@@ -1,7 +1,7 @@
 from NAA import APIRequest
 from NAA.web import API
 
-from school_messenger.utils import is_authorized, has_user_agent
+from school_messenger.utils import is_authorized, has_user_agent, generate_id
 
 
 api = API("0.0.0.0", 3333, name="School Messenger")
@@ -15,20 +15,20 @@ def users(_):
 
 @users.add("GET")
 def info(request: APIRequest):
-    if not is_authorized(request):
-        return 401
-
     return {"name": "",
-            "id": ""}
+            "id": str(generate_id(1))}
+
+
+info.add_request_check(401)(is_authorized)
 
 
 @users.add("GET")
 def whoami(request: APIRequest):
-    if not is_authorized(request):
-        return 401
-
     return {"name": "",
-            "id": ""}
+            "id": str(generate_id(1))}
+
+
+whoami.add_request_check(401)(is_authorized)
 
 
 @users.add("POST", "DELETE")
@@ -55,15 +55,14 @@ def token(request: APIRequest):
 
 @api.add("POST", "GET")
 def messages(request: APIRequest):
-    if not is_authorized(request):
-        return 401
-
     if request.method == "POST":
-        return 201, {"ID": ""}
+        return 201, {"ID": str(generate_id(2))}
 
     if request.method == "GET":
-        return {"messages": [{"id": "", "content": "", "author": {"id": "", "name": ""}},
-                             {"id": "", "content": "", "author": {"id": "", "name": ""}}]}
+        return {"messages": [{"id": str(generate_id(2)), "content": "", "author": {"id": str(generate_id(1)), "name": ""}}]}
+
+
+messages.add_request_check(401)(is_authorized)
 
 
 api(debug=True, reload=True)
