@@ -171,10 +171,9 @@ All used status codes by the messenger:
 | 200  | OK                                                  | Yes            |
 | 201  | Created                                             | Yes            |
 | 204  | No Content (nothing to say...)                      | Yes            |
-| 400  | Bad Request (mal formed Header)                     | No             |
+| 400  | Bad Request (mal formed or missing Header)          | No             |
 | 401  | Unauthorized (missing `Authorization`/`User-Agent`) | No             |
 | 403  | Forbidden                                           | No             |
 | 404  | Not Found                                           | No             |
 | 405  | Method Not Allowed                                  | No             |
-| 406  | Not Acceptable (wrong headers)                      | No             |
 | 5XX  | Internal Server Error (sorry if you see them)       | No             |
