@@ -56,14 +56,14 @@ class V0:
         @api.add("POST", "GET")
         def messages(request: APIRequest):
             if request.method == "GET":
-                if not all([(content := request.get("content", ""))]):
+                if not all([(amount := request.get("amount", "20")).isnumeric(),
+                            (before := request.get("before", "-1")).isnumeric(),
+                            (after := request.get("after", "-1")).isnumeric()]):
                     return 400
                 return {"messages": [{"id": "", "content": "", "author": {"id": "", "name": ""}}]}
 
             if request.method == "POST":
-                if not all([(amount := request.get("amount", "20")).isnumeric(),
-                            (before := request.get("before", "-1")).isnumeric(),
-                            (after := request.get("after", "-1")).isnumeric()]):
+                if not all([(content := request.get("content", ""))]):
                     return 400
                 return 201, {"ID": ""}
 
