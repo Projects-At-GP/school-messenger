@@ -350,6 +350,7 @@ class LogDB(DatabaseBase):
             with self as db:
                 now = datetime.utcnow().isoformat(sep=" ")
                 ip = ip or "nA"
+                msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
                 db.add(self.__TABLE_LOGS__, (now, level, ip, msg))
                 print(f"\033[32m{now}\t"
                       f"\033[31m{level}\t"
