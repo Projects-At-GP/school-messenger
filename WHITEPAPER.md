@@ -36,7 +36,7 @@ User-Agent:     SchoolMessengerExamples Python3.9
 You can gain information about accounts by using the `users/info`-endpoint.
 ```yml
 GET users/info
-query:          <USER NAME OR USER ID>
+Query:          <USER NAME OR USER ID>
 ```
 If you want to know who you are (have only your token from [here](#get-token)) you can use the `users/whoami`-endpoint.
 ```yml
@@ -56,8 +56,8 @@ All of these examples have the following response:
 You have to create an account to get an access token to use the messenger.
 ```yml
 POST users/registration
-name:           <YOUR NAME>
-password:       <YOUR PASSWORD>
+Name:           <YOUR NAME>
+Password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 
@@ -75,7 +75,7 @@ Deletes your account.
 **THIS ACTION CANNOT MAKE UNDONE!!!**
 ```yml
 DELETE users/registration
-password:       <YOUR PASSWORD>
+Password:       <YOUR PASSWORD>
 ```
 
 > Status: 204
@@ -88,8 +88,8 @@ There two ways to get the token:
 2. by using the `users/me/token`-endpoint:
 ```yml
 GET users/me/token
-name:           <YOUR NAME>
-password:       <YOUR PASSWORD>
+Name:           <YOUR NAME>
+Password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 
@@ -106,7 +106,7 @@ password:       <YOUR PASSWORD>
 You can send messages by using the `messages`-endpoint.
 ```yml
 POST messages
-content:        Hello World!\nThis is my first message!
+Content:        Hello World!\nThis is my first message!
 ```
 
 > Status: 201
@@ -120,9 +120,9 @@ content:        Hello World!\nThis is my first message!
 You can fetch messages by using the `messages`-endpoint.
 ```yml
 GET messages
-amount:         <MAX. AMOUNT (-1 to get all) = 20>
-before:         <UTC-TIMESTAMP = -1>
-after:          <UTC-TIMESTAMP = -1>
+Amount:         <MAX. AMOUNT (-1 to get all) = 20>
+Before:         <UTC-TIMESTAMP = -1>
+After:          <UTC-TIMESTAMP = -1>
 ```
 
 > Status: 200
