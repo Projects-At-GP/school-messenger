@@ -90,7 +90,7 @@ class V1:
             if request.method == "POST":
                 if not all([(content := request.get("Content", ""))]):
                     return 400
-                author = database.account_info(token=request.get("Authorization"))
+                author = database.account_info(token=request.get("Authorization").split()[1])
                 data = database.add_message(author[0], content)
                 return 201, {"ID": str(data)}
 
