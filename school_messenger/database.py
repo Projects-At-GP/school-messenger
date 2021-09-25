@@ -4,8 +4,6 @@ from secrets import token_bytes
 from base64 import b64encode, b64decode
 from datetime import datetime
 
-from .utils import generate_id
-
 
 __all__ = (
     "DataBase",
@@ -167,6 +165,7 @@ class AccountDB(DatabaseBase):
         -------
         Literal[False, str]
         """
+        from .utils import generate_id  # noqa
         with self as db:
             try:
                 assert not name.isnumeric(), "This can be an ID!"
@@ -278,6 +277,7 @@ class MessageDB(DatabaseBase):
         author: int
         content: str
         """
+        from .utils import generate_id  # noqa
         with self as db:
             id = generate_id(2)  # noqa
             content = b64encode(content.encode("utf-8", "ignore")).decode("utf-8")
