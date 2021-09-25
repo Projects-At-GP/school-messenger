@@ -279,6 +279,7 @@ class MessageDB(DatabaseBase):
             id = generate_id(2)  # noqa
             content = b64encode(content.encode("utf-8", "ignore")).decode("utf-8")
             db.add(self.__TABLE_MESSAGES__, (id, author, content))
+            return id
 
     def get_messages(self, maximum=20, before=-1, after=-1):
         """

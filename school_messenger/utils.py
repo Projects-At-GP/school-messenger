@@ -1,4 +1,5 @@
 import datetime
+from .database import DataBase
 
 
 __all__ = (
@@ -8,21 +9,26 @@ __all__ = (
 )
 
 
+database = DataBase("database.sqlite")
+
+
 def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
     """
     Parameters
     ----------
     request: NAA.APIRequest
     authorization_key: str
-    valid: typing.Iterable[str]
+    valid: list[str]
 
     Returns
     -------
     bool
     """
     try:
-        assert (token := request.headers.get(authorization_key, "")), "Missing Header."
-        assert token  # todo: check if `token` is in database
+        assert (token := request.headers.get(authorization_key, "")), "Missing Header!"
+        assert token.startswith(valid), "Missing Clarification!"
+        assert len(token.split()) == 2, "Missing Token! (Just 'User' etc. ...)"
+        assert database.account_info(token=token.split()[1]), "Invalid Token!"
         return True
     except AssertionError:
         return False
