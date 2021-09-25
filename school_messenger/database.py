@@ -227,19 +227,15 @@ class MessageDB(DatabaseBase):
             before = ((before - 1609455600000) << 15) + 65535
         if after == -1:
             # 0 -> 0000000000000000000000000000000000000000000000000000000000000000
+            after = 0
+        else:
             after = (after - 1609455600000) << 15
 
-        msgs = []
         with self as db:
-            db.execute(f"SELECT * FROM {self.__TABLE_MESSAGES__} ORDER BY id DESC")
-            while len(msgs) < maximum or maximum == -1:
-                msg = db.fetchone()
-                if msg is None:
-                    break
-                if before > msg[0] > after:
-                    txt = b64decode(msg[2].encode("utf-8")).decode()
-                    msgs.append((msg[0], msg[1], txt))
-            return msgs
+            db.execute(f"SELECT * FROM {self.__TABLE_MESSAGES__} "
+                       f"WHERE {before} > id > {after} ORDER BY id DESC")
+            msgs = db.fetchmany(maximum)
+            return [(msg[0], msg[1], b64decode(msg[2].encode("utf-8")).decode()) for msg in msgs]
 
 
 class LogDB(DatabaseBase):
