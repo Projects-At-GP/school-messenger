@@ -61,6 +61,8 @@ password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 
+> **NOTE: `name` can't be numeric-only and must contain at least one letter!**
+
 > Status: 201
 ```json
 {
