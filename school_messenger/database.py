@@ -170,6 +170,7 @@ class AccountDB(DatabaseBase):
         with self as db:
             try:
                 assert not name.isnumeric(), "This can be an ID!"
+                name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
                 assert not db.findone(self.__TABLE_ACCOUNTS__, "name", name), "User already registered!"
                 id = generate_id(1)  # noqa
                 password = password + str(id)
@@ -196,6 +197,7 @@ class AccountDB(DatabaseBase):
         """
         with self as db:
             try:
+                name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
                 user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
                 assert user is not None, "Invalid Name!"
                 password = password + str(user[0])
@@ -247,6 +249,7 @@ class AccountDB(DatabaseBase):
                 if query.isnumeric():
                     data = db.findone(self.__TABLE_ACCOUNTS__, "id", int(query))
                 else:
+                    query = b64encode(query.encode("utf-8", "ignore")).decode("utf-8")
                     data = db.findone(self.__TABLE_ACCOUNTS__, "name", query)
             else:
                 data = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
