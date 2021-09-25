@@ -90,7 +90,8 @@ class DatabaseBase:
         """
         Parameters
         ----------
-        table, collum, query: str
+        table, collum: str
+        query: str, int
         """
         with self as db:
             if collum is not None and query is not None:
@@ -103,7 +104,8 @@ class DatabaseBase:
         """
         Parameters
         ----------
-        table, collum, query: str
+        table, collum: str
+        query: str, int
         """
         with self as db:
             if collum is not None and query is not None:
@@ -116,7 +118,8 @@ class DatabaseBase:
         """
         Parameters
         ----------
-        table, collum, query: str
+        table, collum: str
+        query: str, int
         size: int
         """
         with self as db:
@@ -170,11 +173,9 @@ class AccountDB(DatabaseBase):
                 assert not db.findone(self.__TABLE_ACCOUNTS__, "name", name), "User already registered!"
                 id = generate_id(1)  # noqa
                 password = password + str(id)
-                password = sha512(password.encode("utf-8"))
+                password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
-            except AssertionError:
-                return False
-            except ValueError:
+            except (AssertionError, ValueError):
                 return False
             else:
                 token = (b64encode(str(id).encode()).decode(), b64encode(token_bytes()).decode())
@@ -182,6 +183,76 @@ class AccountDB(DatabaseBase):
                 token = token.replace("+", "-").replace("/", "_")
                 db.add(self.__TABLE_ACCOUNTS__, (id, name, password, token))
                 return token
+
+    def account_token(self, name, password):
+        """
+        Parameters
+        ----------
+        name, password: str
+
+        Returns
+        -------
+        str
+        """
+        with self as db:
+            try:
+                user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
+                assert user is not None, "Invalid Name!"
+                password = password + str(user[0])
+                password = sha512(password.encode("utf-8", "ignore"))
+                password = password.hexdigest()
+                assert password == user[2], "Invalid Password!"
+            except AssertionError:
+                return
+            else:
+                return user[3]
+
+    def account_delete(self, token, password):
+        """
+        Parameters
+        ----------
+        token, password: str
+
+        Returns
+        -------
+        bool
+            Whether the account could be deleted.
+        """
+        with self as db:
+            try:
+                user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
+                password = password + str(user[0])
+                password = sha512(password.encode("utf-8", "ignore"))
+                password = password.hexdigest()
+                assert password == user[2], "Wrong Password!"
+                db.execute(f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
+                           f"WHERE token=={token!r}")
+            except AssertionError:
+                return False
+            else:
+                return True
+
+    def account_info(self, *, query=None, token=None):
+        """
+        Parameters
+        ----------
+        query, token: str, optional
+
+        Returns
+        -------
+        tuple[int, str]
+        """
+        with self as db:
+            if query is not None:
+                if query.isnumeric():
+                    data = db.findone(self.__TABLE_ACCOUNTS__, "id", int(query))
+                else:
+                    data = db.findone(self.__TABLE_ACCOUNTS__, "name", query)
+            else:
+                data = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
+            if data is None:
+                return ()
+            return data[0], data[1]
 
 
 class MessageDB(DatabaseBase):
@@ -232,7 +303,7 @@ class MessageDB(DatabaseBase):
             after = (after - 1609455600000) << 15
 
         with self as db:
-            db.execute(f"SELECT * FROM {self.__TABLE_MESSAGES__} "
+            db.execute(f"SELECT * FROM {self.__TABLE_MESSAGES__!r} "
                        f"WHERE {before} > id > {after} ORDER BY id DESC")
             msgs = db.fetchmany(maximum)
             return [(msg[0], msg[1], b64decode(msg[2].encode("utf-8")).decode()) for msg in msgs]
@@ -240,14 +311,26 @@ class MessageDB(DatabaseBase):
 
 class LogDB(DatabaseBase):
     __TABLE_LOGS__ = "logs"
+    LOG_LEVEL = {
+        "UNSET": 0,
+        "DEBUG": 1,
+        "INFO": 2,
+        "ERROR": 3,
+        "WARNING": 4,
+        "CRITICAL": 5
+    }
+
+    def __init__(self, database, log_level=LOG_LEVEL["UNSET"]):
+        super().__init__(database)
+        self._log_level = log_level
 
     def setup_logs(self):
         with self as db:
             db.execute(f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_LOGS__!r} (
                 'date'      TEXT    PRIMARY KEY,
-                'ip'        TEXT,
                 'level'     INTEGER,
+                'ip'        TEXT,
                 'log'       TEXT
             )
             """)
@@ -256,20 +339,27 @@ class LogDB(DatabaseBase):
         """
         Parameters
         ----------
-        level: int
+        level: int, str
         ip, msg: str
         """
-        with self as db:
-            now = db.execute("SELECT date('now')")
-            db.add(self.__TABLE_LOGS__, (now, ip, level, msg))
+        if level >= self._log_level:
+            with self as db:
+                now = datetime.utcnow().isoformat(sep=" ")
+                ip = ip or "nA"
+                db.add(self.__TABLE_LOGS__, (now, level, ip, msg))
+                print(f"\033[32m{now}\t"
+                      f"\033[31m{level}\t"
+                      f"\033[37m{ip:15}\t"
+                      f"\033[35m{msg}")
 
 
 class DataBase(AccountDB, MessageDB, LogDB):
     """
     A morph of all DataBase models (AccountDB, MessageDB, LogDB).
     """
-    def __init__(self, database):
-        super().__init__(database)
+
+    def __init__(self, database, log_level=0):
+        super().__init__(database=database, log_level=log_level)
         self.setup_accounts()
         self.setup_messages()
         self.setup_logs()
