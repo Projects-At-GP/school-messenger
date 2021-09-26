@@ -276,13 +276,17 @@ class MessageDB(DatabaseBase):
         ----------
         author: int
         content: str
+
+        Returns
+        -------
+        str
         """
         from .utils import generate_id  # noqa
         with self as db:
             id = generate_id(2)  # noqa
             content = b64encode(content.encode("utf-8", "ignore")).decode("utf-8")
             db.add(self.__TABLE_MESSAGES__, (id, author, content))
-            return id
+            return str(id)
 
     def get_messages(self, maximum=20, before=-1, after=-1):
         """
@@ -292,7 +296,7 @@ class MessageDB(DatabaseBase):
 
         Returns
         -------
-        list[tuple[int, int, str]]
+        list[tuple[str, int, str]]
         """
         if before == -1:
             # 18446744073709551615 -> 1111111111111111111111111111111111111111111111111111111111111111
@@ -309,7 +313,7 @@ class MessageDB(DatabaseBase):
             db.execute(f"SELECT * FROM {self.__TABLE_MESSAGES__!r} "
                        f"WHERE {before} > id > {after} ORDER BY id DESC")
             msgs = db.fetchmany(maximum)
-            return [(msg[0], msg[1], b64decode(msg[2].encode("utf-8")).decode()) for msg in msgs]
+            return [(str(msg[0]), msg[1], b64decode(msg[2].encode("utf-8")).decode()) for msg in msgs]
 
 
 class LogDB(DatabaseBase):

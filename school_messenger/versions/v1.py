@@ -92,6 +92,6 @@ class V1:
                     return 400
                 author = database.account_info(token=request.get("Authorization").split()[1])
                 data = database.add_message(author[0], content)
-                return 201, {"ID": str(data)}
+                return 201, {"ID": data}
 
         messages.add_request_check(401)(is_authorized)
