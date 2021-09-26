@@ -358,7 +358,7 @@ class LogDB(DatabaseBase):
                 print(f"\033[32m{now}\t"
                       f"\033[31m{level}\t"
                       f"\033[37m{ip:15}\t"
-                      f"\033[35m{msg}")
+                      f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}")
 
 
 class DataBase(AccountDB, MessageDB, LogDB):
