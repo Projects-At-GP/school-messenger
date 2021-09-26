@@ -254,7 +254,7 @@ class AccountDB(DatabaseBase):
                 data = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
             if data is None:
                 return ()
-            return data[0], data[1]
+            return data[0], b64decode(data[1].encode("utf-8", "ignore")).decode("utf-8")
 
 
 class MessageDB(DatabaseBase):
@@ -288,8 +288,7 @@ class MessageDB(DatabaseBase):
         """
         Parameters
         ----------
-        maximum: int
-        before, after: int
+        maximum, before, after: int
 
         Returns
         -------
