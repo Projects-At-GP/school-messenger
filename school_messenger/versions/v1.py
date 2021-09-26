@@ -73,13 +73,13 @@ class V1:
         @api.add("POST", "GET")
         def messages(request: APIRequest):
             if request.method == "GET":
-                if not all([(amount := request.get("Amount", "20")).isnumeric(),
-                            (before := request.get("Before", "-1")).isnumeric(),
-                            (after := request.get("After", "-1")).isnumeric()]):
+                if not all([(amount := request.get("Amount", "20")).removeprefix("-").isnumeric(),
+                            (before := request.get("Before", "-1")).removeprefix("-").isnumeric(),
+                            (after := request.get("After", "-1")).removeprefix("-").isnumeric()]):
                     return 400
                 cached_authors = {}
                 msgs = []
-                data = database.get_messages(amount, before, after)[:]
+                (data) = database.get_messages(int(amount), int(before), int(after))
                 for msg in data:
                     if msg[1] not in cached_authors:
                         cached_authors[msg[1]] = database.account_info(query=str(msg[1]))
