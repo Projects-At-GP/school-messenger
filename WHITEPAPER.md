@@ -2,6 +2,8 @@
 
 ## Overview
 - [Connection](#connection)
+    - [Versioning](#versions)
+        - [v0](#v0)
 - [Header](#header)
 - [Account](#account)
     - [Info](#account-info)
@@ -17,9 +19,22 @@
 - [Status Codes](#status-codes)
 
 ## Connection
-You can connect by just calling the API.
+You can connect by just calling the ˝REST˝full-API.
 The HOST and PORT must be provided by the host, but by default you can use the PORT `3333`.
 > Note: at the moment the connection goes over **`HTTP`** and *not* `HTTPS`
+
+### Versions
+The API is split into versions to keep "old" clients running, even if the structure of the response ect have changed.
+
+#### v0
+`v0` has all here listed endpoints in the way they're mentioned.
+> Note: This version has default responses because it isn't connected to a database. But it still checks all data!
+
+#### v1
+`v1` is the first version and even with `v0`, but is connected to a database and can be used for communication.
+
+#### v2
+`v2` is like `v1`, but *all keys in (json-) response* are ***lowercase***.
 
 ## Header
 The header *must* contain `Authorization` and `User-Agent` on every request.
@@ -130,10 +145,10 @@ After:          <UTC-TIMESTAMP = -1>
 {
   "messages": [
     {
-      "id": "<MESSAGE ID>", 
-      "content": "<MESSAGE CONTENT>", 
+      "id": "<MESSAGE ID>",
+      "content": "<MESSAGE CONTENT>",
       "author": {
-        "id": "<AUTHOR ID>", 
+        "id": "<AUTHOR ID>",
         "name": "<AUTHOR NAME>"
       }
     },

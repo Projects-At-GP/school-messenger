@@ -2,7 +2,8 @@ from NAA.web import API
 
 from school_messenger.versions import (
     V0,
-    V1
+    V1,
+    V2
 )
 
 
@@ -12,6 +13,7 @@ api = API(host="0.0.0.0", port=3333, name="School Messenger",
 
 api.add_version(version=0)(V0)  # test-version without database
 api.add_version(version=1)(V1)
+api.add_version(version=2, fallback=V1)(V2)
 
 
 api(debug=True, reload=True)
