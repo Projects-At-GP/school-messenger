@@ -4,6 +4,8 @@
 - [Connection](#connection)
     - [Versioning](#versions)
         - [v0](#v0)
+        - [v1](#v1)
+        - [v2](#v2)
 - [Header](#header)
 - [Account](#account)
     - [Info](#account-info)
