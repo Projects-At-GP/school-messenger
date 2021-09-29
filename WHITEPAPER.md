@@ -85,7 +85,7 @@ Password:       <YOUR PASSWORD>
 
 > **NOTE: `name` can't be numeric-only and must contain at least one letter!**
 
-> Versions: `v0`, `v1`, `v2`
+> Versions: `v0`, `v1`
 
 > Status: 201
 ```json
