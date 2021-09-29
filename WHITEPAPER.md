@@ -51,15 +51,19 @@ User-Agent:     SchoolMessengerExamples Python3.9
 ## Account
 ### Account Info
 You can gain information about accounts by using the `users/info`-endpoint.
+> Versions: `v0`, `v1`, `v2`
 ```yml
 GET users/info
 Query:          <USER NAME OR USER ID>
 ```
 If you want to know who you are (have only your token from [here](#get-token)) you can use the `users/whoami`-endpoint.
+> Versions: `v0`, `v1`, `v2`
 ```yml
 GET users/whoami
 ```
 All of these examples have the following response:
+
+> Versions: `v0`, `v1`, `v2`
 
 > Status: 200
 ```json
@@ -71,6 +75,7 @@ All of these examples have the following response:
 
 ### Create Account
 You have to create an account to get an access token to use the messenger.
+> Versions: `v0`, `v1`, `v2`
 ```yml
 POST users/registration
 Name:           <YOUR NAME>
@@ -80,6 +85,8 @@ Password:       <YOUR PASSWORD>
 
 > **NOTE: `name` can't be numeric-only and must contain at least one letter!**
 
+> Versions: `v0`, `v1`, `v2`
+
 > Status: 201
 ```json
 {
@@ -87,9 +94,19 @@ Password:       <YOUR PASSWORD>
 }
 ```
 
+> Versions: `v2`
+
+> Status: 201
+```json
+{
+  "token": "<TOKEN>"
+}
+```
+
 ### Delete Account
 Deletes your account.
 **THIS ACTION CANNOT MAKE UNDONE!!!**
+> Versions: `v0`, `v1`, `v2`
 ```yml
 DELETE users/registration
 Password:       <YOUR PASSWORD>
@@ -103,6 +120,7 @@ Of course, you need an access token for the `Authorization`.
 There two ways to get the token:
 1. by [Registration](#create-account) you can read it from the response or
 2. by using the `users/me/token`-endpoint:
+> Versions: `v0`, `v1`, `v2`
 ```yml
 GET users/me/token
 Name:           <YOUR NAME>
@@ -110,21 +128,36 @@ Password:       <YOUR PASSWORD>
 ```
 > **Here is *no `Authorization`* needed!**
 
+> Versions: `v0`, `v1`
+
 > Status: 200
 ```json
 {
   "Token": "<TOKEN>"
 }
 ```
+
+> Versions: `v2`
+
+> Status: 200
+```json
+{
+  "token": "<TOKEN>"
+}
+```
+
 **Recommendation: you can store the token after registration ;)**
 
 ## Messages
 ### Send Messages
 You can send messages by using the `messages`-endpoint.
+> Versions: `v0`, `v1`, `v2`
 ```yml
 POST messages
-Content:        Hello World!\nThis is my first message!
+Content:        Hello World!
 ```
+
+> Versions: `v0`, `v1`, `v2`
 
 > Status: 201
 ```json
@@ -135,12 +168,15 @@ Content:        Hello World!\nThis is my first message!
 
 ### Fetch Messages
 You can fetch messages by using the `messages`-endpoint.
+> Versions: `v0`, `v1`, `v2`
 ```yml
 GET messages
 Amount:         <MAX. AMOUNT (-1 to get all) = 20>
 Before:         <UTC-TIMESTAMP = -1>
 After:          <UTC-TIMESTAMP = -1>
 ```
+
+> Versions: `v0`, `v1`, `v2`
 
 > Status: 200
 ```json
