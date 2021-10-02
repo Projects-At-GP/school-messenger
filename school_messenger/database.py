@@ -337,28 +337,30 @@ class LogDB(DatabaseBase):
             CREATE TABLE IF NOT EXISTS {self.__TABLE_LOGS__!r} (
                 'date'      TEXT    PRIMARY KEY,
                 'level'     INTEGER,
+                'version'   TEXT,
                 'ip'        TEXT,
                 'log'       TEXT
             )
             """)
 
-    def add_log(self, level, ip, msg):
+    def add_log(self, level, version, ip, msg):
         """
         Parameters
         ----------
-        level: int, str
-        ip, msg: str
+        level: int
+        version, ip, msg: str
         """
         if level >= self._log_level:
             with self as db:
                 now = datetime.utcnow().isoformat(sep=" ")
                 ip = ip or "nA"
                 msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
-                db.add(self.__TABLE_LOGS__, (now, level, ip, msg))
-                print(f"\033[32m{now}\t"
-                      f"\033[31m{level}\t"
-                      f"\033[37m{ip:15}\t"
-                      f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}")
+                db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg))
+                print(f"\033[32m{now}\033[0m\t"
+                      f"\033[31m{level}\033[0m\t"
+                      f"\033[36m{version}\033[0m\t"
+                      f"\033[37m{ip:15}\033[0m\t"
+                      f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m")
 
 
 class DataBase(AccountDB, MessageDB, LogDB):
