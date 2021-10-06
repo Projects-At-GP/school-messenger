@@ -339,28 +339,32 @@ class LogDB(DatabaseBase):
                 'level'     INTEGER,
                 'version'   TEXT,
                 'ip'        TEXT,
-                'log'       TEXT
+                'log'       TEXT,
+                'headers'   TEXT
             )
             """)
 
-    def add_log(self, level, version, ip, msg):
+    def add_log(self, level, version, ip, msg, headers):
         """
         Parameters
         ----------
         level: int
         version, ip, msg: str
+        headers: dict
         """
         if level >= self._log_level:
             with self as db:
                 now = datetime.utcnow().isoformat(sep=" ")
                 ip = ip or "nA"
                 msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
-                db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg))
+                headers = b64encode(str(headers).encode("utf-8", "ignore")).decode("utf-8")
+                db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg, headers))
                 print(f"\033[32m{now}\033[0m\t"
                       f"\033[31m{level}\033[0m\t"
                       f"\033[36m{version}\033[0m\t"
                       f"\033[37m{ip:15}\033[0m\t"
-                      f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m")
+                      f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
+                      f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m")
 
 
 class DataBase(AccountDB, MessageDB, LogDB):

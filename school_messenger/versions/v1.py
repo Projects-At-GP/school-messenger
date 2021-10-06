@@ -2,14 +2,25 @@ from NAA import APIRequest
 from NAA.web import API
 
 from ..utils import has_user_agent, is_authorized
-from ..database import DataBase
+from .base import VersionBase
 
 
-class V1:
+class V1(VersionBase):
     def __init__(self, api: API):
-        database = DataBase("database.sqlite")
+        database = self.database
 
         api.add_global_request_check(401)(has_user_agent)
+
+        @api.add_global_request_check(-1)
+        def log_requests(request: APIRequest):
+            database.add_log(
+                level=database.LOG_LEVEL["DEBUG"],
+                version=request.version,
+                ip=request.ip,
+                msg=f"{request.method} {request.url}",
+                headers=request.headers
+            )
+            return True
 
         @api.add(ignore_invalid_methods=True)
         def users(_):
@@ -43,6 +54,12 @@ class V1:
                 data = database.add_account(name, password)
                 if data is False:
                     return 400
+                database.add_log(
+                    level=database.LOG_LEVEL["INFO"],
+                    version=request.version,
+                    ip=request.ip,
+                    msg=f"add account {name!r}"
+                )
                 return 201, {"Token": data}
 
             if request.method == "DELETE":
@@ -51,9 +68,24 @@ class V1:
                 if not all([(password := request.get("Password", ""))]):
                     return 400
                 token = request.get("Authorization")  # noqa
+                name = database.account_info(token=token)[1]
                 data = database.account_delete(token, password)
                 if data is False:
+                    database.add_log(
+                        level=database.LOG_LEVEL["WARNING"],
+                        version=request.version,
+                        ip=request.ip,
+                        msg=f"trying delete account {name!r}",
+                        headers=request.headers
+                    )
                     return 401
+                database.add_log(
+                    level=database.LOG_LEVEL["INFO"],
+                    version=request.version,
+                    ip=request.ip,
+                    msg=f"delete account {name!r}",
+                    headers=request.headers
+                )
                 return 204
 
         @users.add(ignore_invalid_methods=True)
