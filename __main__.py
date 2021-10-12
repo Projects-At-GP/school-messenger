@@ -10,7 +10,7 @@ from school_messenger.versions import (
 )
 
 
-NAA_REQUIRED_MIN_VERSION = "2021.10.06.001"
+NAA_REQUIRED_MIN_VERSION = "2021.10.13.001"
 
 if NAA.__version__ < NAA_REQUIRED_MIN_VERSION:
     raise RuntimeError("NAA out of date! (require at least version %s instead of %s)"
