@@ -8,6 +8,8 @@ saves/
 *.sqlite
 *.db
 
+config.json
+
 # PyCharm
 .idea/
 

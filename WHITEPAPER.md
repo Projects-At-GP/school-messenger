@@ -6,7 +6,9 @@
         - [v0](#v0)
         - [v1](#v1)
         - [v2](#v2)
-- [Header](#header)
+- [Communication (Client-Server)](#communication)
+    - [Request](#request)
+    - [Response](#response)
 - [Account](#account)
     - [Info](#account-info)
     - [Create](#create-account)
@@ -38,7 +40,8 @@ The API is split into versions to keep "old" clients running, even if the struct
 #### v2
 `v2` is like `v1`, but *all keys in (json-) response* are ***lowercase***.
 
-## Header
+## Communication
+### Request
 The header *must* contain `Authorization` and `User-Agent` on every request.
 > **These Headers must always be added to the examples here!**
 
@@ -47,6 +50,12 @@ Example:
 Authorization:  User <YOUR TOKEN>
 User-Agent:     SchoolMessengerExamples Python3.9
 ```
+
+### Response
+The response-content is a `application/json`-response and always provides the field `message`.
+This field is provided to make sure, a status-code won't be misinterpreted
+(e.g. `404` can mean `Page Not Found` or `Entry Not Found`).
+> *All other fields are described in the sections below where you can see how requests and responses are build.*
 
 ## Account
 ### Account Info
