@@ -1,1 +1,2 @@
 git+https://github.com/AlbertUnruh/NAA-API.git#egg=NAA
+git+https://github.com/AlbertUnruh/AlbertUnruhUtils.py.git#egg=AlbertUnruhUtils
