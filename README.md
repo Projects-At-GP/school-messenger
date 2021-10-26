@@ -6,3 +6,6 @@ All endpoints and specifications can be found in the [Specification](#Specificat
 
 # Specification
 The specification can be looked up in the [WhitePaper](WHITEPAPER.md).
+
+# Bugs And ToDo
+- [ ] Fix ratelimit decrease remaining requests by two and not by one per request.

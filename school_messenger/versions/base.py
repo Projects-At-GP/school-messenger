@@ -1,9 +1,5 @@
-from ..database import DataBase
-from ..config import Config
+from ..utils import database
 
 
 class VersionBase:
-    database = DataBase(
-        Config["database"]["file"],
-        Config["database"]["log level"]
-    )
+    database = database

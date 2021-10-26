@@ -1,7 +1,9 @@
 from NAA import APIRequest
 from NAA.web import API
+from AlbertUnruhUtils.ratelimit import ServerRateLimit
 
-from ..utils import has_user_agent, is_authorized
+from ..utils import has_user_agent, is_authorized, get_user_type
+from ..config import Config, redis
 from .base import VersionBase
 
 
@@ -10,8 +12,10 @@ class V1(VersionBase):
         database = self.database
 
         api.add_global_request_check(401)(has_user_agent)
+        api.add_global_response_check()(lambda response: print(response))
 
         @api.add_global_request_check(-1)
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def log_requests(request: APIRequest):
             database.add_log(
                 level=database.LOG_LEVEL["DEBUG"],
@@ -23,10 +27,12 @@ class V1(VersionBase):
             return True
 
         @api.add(ignore_invalid_methods=True)
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def users(_):
             ...
 
         @users.add("GET")
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def info(request: APIRequest):
             if not all([(query := request.get("Query"))]):
                 return 400, "Missing `Query`!"
@@ -38,14 +44,16 @@ class V1(VersionBase):
         info.add_request_check(401)(is_authorized)
 
         @users.add("GET")
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def whoami(request: APIRequest):
-            token = request.get("Authorization")  # noqa
+            token = request.get("Authorization").split()[1]  # noqa
             data = database.account_info(token=token)
             return {"name": data[1], "id": str(data[0])}
 
         whoami.add_request_check(401)(is_authorized)
 
         @users.add("POST", "DELETE")
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def registration(request: APIRequest):
             if request.method == "POST":
                 if not all([(name := request.get("Name", "")),
@@ -67,7 +75,7 @@ class V1(VersionBase):
                     return 401
                 if not all([(password := request.get("Password", ""))]):
                     return 400, "Missing `Password`!"
-                token = request.get("Authorization")  # noqa
+                token = request.get("Authorization").split()[1]  # noqa
                 name = database.account_info(token=token)[1]
                 data = database.account_delete(token, password)
                 if data is False:
@@ -89,10 +97,12 @@ class V1(VersionBase):
                 return 204
 
         @users.add(ignore_invalid_methods=True)
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def me(_):
             ...
 
         @me.add("GET")
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def token(request: APIRequest):
             if not all([(name := request.get("Name", "")),
                         (password := request.get("Password", ""))]):
@@ -103,6 +113,7 @@ class V1(VersionBase):
             return {"Token": data}
 
         @api.add("POST", "GET")
+        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def messages(request: APIRequest):
             if request.method == "GET":
                 if not all([(amount := request.get("Amount", "20")).removeprefix("-").isnumeric(),

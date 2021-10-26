@@ -13,8 +13,8 @@ from school_messenger.versions import (
 )
 
 
-NAA_REQUIRED_MIN_VERSION = "2021.10.13.001"
-AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.10.23.005"
+NAA_REQUIRED_MIN_VERSION = "2021.10.26.005"
+AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.10.26.000"
 
 if NAA.__version__ < NAA_REQUIRED_MIN_VERSION:
     raise RuntimeError("NAA out of date! (require at least version %s instead of %s)"
@@ -26,7 +26,8 @@ if AlbertUnruhUtils.__version__ < AlbertUnruhUtils_REQUIRED_MIN_VERSION:
 
 
 api = API(host=Config["host"], port=Config["port"], name=Config["name"],
-          version_pattern=Config["version"]["pattern"], default=Config["version"]["default"])
+          version_pattern=Config["version"]["pattern"], default=Config["version"]["default"],
+          used_libs=["AlbertUnruhUtils"])
 
 
 api.add_version(version=0)(V0)  # test-version without database
