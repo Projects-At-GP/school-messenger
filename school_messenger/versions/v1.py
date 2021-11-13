@@ -15,7 +15,6 @@ class V1(VersionBase):
         api.add_global_response_check()(lambda response: print(response))
 
         @api.add_global_request_check(-1)
-        @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def log_requests(request: APIRequest):
             database.add_log(
                 level=database.LOG_LEVEL["DEBUG"],
