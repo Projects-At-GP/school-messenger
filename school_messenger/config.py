@@ -4,10 +4,11 @@ from redis import Redis
 
 __all__ = (
     "Config",
-    "redis"
+    "redis",
 )
 
 
+# fmt: off
 DEFAULT_CONFIG = {
     "host": "127.0.0.1",
     "port": 3333,
@@ -52,11 +53,17 @@ DEFAULT_CONFIG = {
         }
     }
 }
+# fmt: on
 
-Config = JSONConfig(file="./config.json",
-                    default_config=DEFAULT_CONFIG)
 
-redis = Redis(host=Config["redis"]["host"],
-              port=Config["redis"]["port"],
-              db=Config["redis"]["db"],
-              password=Config["redis"]["password"])
+Config = JSONConfig(
+    file="./config.json",
+    default_config=DEFAULT_CONFIG,
+)
+
+redis = Redis(
+    host=Config["redis"]["host"],
+    port=Config["redis"]["port"],
+    db=Config["redis"]["db"],
+    password=Config["redis"]["password"],
+)

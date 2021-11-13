@@ -37,8 +37,12 @@ class V0(VersionBase):
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def registration(request: APIRequest):
             if request.method == "POST":
-                if not all([(name := request.get("Name", "")),
-                            (password := request.get("Password", ""))]):
+                if not all(
+                    [
+                        (name := request.get("Name", "")),
+                        (password := request.get("Password", "")),
+                    ]
+                ):
                     return 400, "Incorrect `Name` and/or `Password`!"
                 return 201, {"Token": ""}
 
@@ -57,8 +61,12 @@ class V0(VersionBase):
         @me.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def token(request: APIRequest):
-            if not all([(name := request.get("Name", "")),
-                        (password := request.get("Password", ""))]):
+            if not all(
+                [
+                    (name := request.get("Name", "")),
+                    (password := request.get("Password", "")),
+                ]
+            ):
                 return 400, "Missing `Name` and/or `Password`!"
             return {"Token": ""}
 
@@ -66,11 +74,22 @@ class V0(VersionBase):
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def messages(request: APIRequest):
             if request.method == "GET":
-                if not all([(amount := request.get("Amount", "20")).isnumeric(),
-                            (before := request.get("Before", "-1")).isnumeric(),
-                            (after := request.get("After", "-1")).isnumeric()]):
-                    return 400, "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)"
-                return {"messages": [{"id": "", "content": "", "author": {"id": "", "name": ""}}]}
+                if not all(
+                    [
+                        (amount := request.get("Amount", "20")).isnumeric(),
+                        (before := request.get("Before", "-1")).isnumeric(),
+                        (after := request.get("After", "-1")).isnumeric(),
+                    ]
+                ):
+                    return (
+                        400,
+                        "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)",
+                    )
+                return {
+                    "messages": [
+                        {"id": "", "content": "", "author": {"id": "", "name": ""}}
+                    ]
+                }
 
             if request.method == "POST":
                 if not all([(content := request.get("Content", ""))]):

@@ -22,7 +22,7 @@ class V1(VersionBase):
                 version=request.version,
                 ip=request.ip,
                 msg=f"{request.method} {request.url}",
-                headers=request.headers
+                headers=request.headers,
             )
             return True
 
@@ -56,8 +56,12 @@ class V1(VersionBase):
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def registration(request: APIRequest):
             if request.method == "POST":
-                if not all([(name := request.get("Name", "")),
-                            (password := request.get("Password", ""))]):
+                if not all(
+                    [
+                        (name := request.get("Name", "")),
+                        (password := request.get("Password", "")),
+                    ]
+                ):
                     return 400, "Missing `Name` and/or `Password`!"
                 data = database.add_account(name, password)
                 if data is False:
@@ -66,7 +70,7 @@ class V1(VersionBase):
                     level=database.LOG_LEVEL["INFO"],
                     version=request.version,
                     ip=request.ip,
-                    msg=f"add account {name!r}"
+                    msg=f"add account {name!r}",
                 )
                 return 201, {"Token": data}
 
@@ -84,7 +88,7 @@ class V1(VersionBase):
                         version=request.version,
                         ip=request.ip,
                         msg=f"trying delete account {name!r}",
-                        headers=request.headers
+                        headers=request.headers,
                     )
                     return 401, "Password incorrect!"
                 database.add_log(
@@ -92,7 +96,7 @@ class V1(VersionBase):
                     version=request.version,
                     ip=request.ip,
                     msg=f"delete account {name!r}",
-                    headers=request.headers
+                    headers=request.headers,
                 )
                 return 204
 
@@ -104,8 +108,12 @@ class V1(VersionBase):
         @me.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def token(request: APIRequest):
-            if not all([(name := request.get("Name", "")),
-                        (password := request.get("Password", ""))]):
+            if not all(
+                [
+                    (name := request.get("Name", "")),
+                    (password := request.get("Password", "")),
+                ]
+            ):
                 return 400, "Missing `Name` and/or `Password`!"
             data = database.account_token(name, password)
             if data is None:
@@ -116,24 +124,49 @@ class V1(VersionBase):
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def messages(request: APIRequest):
             if request.method == "GET":
-                if not all([(amount := request.get("Amount", "20")).removeprefix("-").isnumeric(),
-                            (before := request.get("Before", "-1")).removeprefix("-").isnumeric(),
-                            (after := request.get("After", "-1")).removeprefix("-").isnumeric()]):
-                    return 400, "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)"
+                if not all(
+                    [
+                        (amount := request.get("Amount", "20"))
+                        .removeprefix("-")
+                        .isnumeric(),
+                        (before := request.get("Before", "-1"))
+                        .removeprefix("-")
+                        .isnumeric(),
+                        (after := request.get("After", "-1"))
+                        .removeprefix("-")
+                        .isnumeric(),
+                    ]
+                ):
+                    return (
+                        400,
+                        "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)",
+                    )
                 cached_authors = {}
                 msgs = []
                 (data) = database.get_messages(int(amount), int(before), int(after))
                 for msg in data:
                     if msg[1] not in cached_authors:
-                        cached_authors[msg[1]] = database.account_info(query=str(msg[1]))
-                    msgs.append({"id": msg[0], "content": msg[2], "author": {"id": cached_authors[msg[1]][0],
-                                                                             "name": cached_authors[msg[1]][1]}})
+                        cached_authors[msg[1]] = database.account_info(
+                            query=str(msg[1])
+                        )
+                    msgs.append(
+                        {
+                            "id": msg[0],
+                            "content": msg[2],
+                            "author": {
+                                "id": cached_authors[msg[1]][0],
+                                "name": cached_authors[msg[1]][1],
+                            },
+                        }
+                    )
                 return {"messages": msgs}
 
             if request.method == "POST":
                 if not all([(content := request.get("Content", ""))]):
                     return 400, "Missing `Content`!"
-                author = database.account_info(token=request.get("Authorization").split()[1])
+                author = database.account_info(
+                    token=request.get("Authorization").split()[1]
+                )
                 data = database.add_message(author[0], content)
                 return 201, {"ID": data}
 

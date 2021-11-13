@@ -8,14 +8,11 @@ __all__ = (
     "has_user_agent",
     "generate_id",
     "get_user_type",
-    "database"
+    "database",
 )
 
 
-database = DataBase(
-    Config["database"]["file"],
-    Config["database"]["log level"]
-)
+database = DataBase(Config["database"]["file"], Config["database"]["log level"])
 
 
 def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
@@ -96,7 +93,7 @@ def get_user_type(request):
     """
     user_type = "admin"  # static at the moment...  # FixMe: FOR PRODUCTION THIS MUST BE "user" OR DYNAMIC!!!
     user_id = 0
-    token = (request.get("Authorization", default="/").split()+[""])[1]
+    token = (request.get("Authorization", default="/").split() + [""])[1]
     if token:
         data = database.account_info(token=token)
         if data:
