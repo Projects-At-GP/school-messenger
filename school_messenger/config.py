@@ -1,11 +1,14 @@
-from json import load, dump
+from AlbertUnruhUtils.config.jsonconfig import JSONConfig
+from redis import Redis
 
 
 __all__ = (
     "Config",
+    "redis",
 )
 
 
+# fmt: off
 DEFAULT_CONFIG = {
     "host": "127.0.0.1",
     "port": 3333,
@@ -26,56 +29,41 @@ DEFAULT_CONFIG = {
     "server": {
         "debug": False,
         "reload": False
+    },
+
+    # the settings for redis
+    "redis": {
+        "host": "127.0.0.1",
+        "port": 6379,
+        "db": 1,
+        "password": None
+    },
+
+    # the settings for the ratelimiting
+    "ratelimits":  {
+        "admin": {
+            "amount": 60,
+            "interval": 30,
+            "timeout": 0
+        },
+        "user": {
+            "amount": 60,
+            "interval": 60,
+            "timeout": 10
+        }
     }
 }
+# fmt: on
 
 
-class Config:
-    def __init__(self, *, file, default=None):
-        """
-        Parameters
-        ----------
-        file: str
-        default: Any
-        """
-        try:
-            with open(file) as f:
-                self._config = load(f)
-        except OSError:
-            self._config = DEFAULT_CONFIG.copy()
-            with open(file, "w") as f:
-                dump(self._config, f, indent=4)
+Config = JSONConfig(
+    file="./config.json",
+    default_config=DEFAULT_CONFIG,
+)
 
-        self.default = default
-        self._file = file
-
-    @property
-    def file(self):
-        return self._file
-
-    @file.setter
-    def file(self, value):
-        self.__init__(file=value, default=self.default)
-
-    @property
-    def config(self):
-        return self._config
-
-    @config.setter
-    def config(self, value):
-        assert isinstance(value, dict), \
-            f"{self.__class__.__name__}.config must be an instance of 'dict', not {value.__class__.__name__!r}!"
-        self._config = value
-        with open(self._file, "w") as f:
-            dump(self._config, f, indent=4)
-
-    def __getitem__(self, item):
-        return self._config.get(item, self.default)
-
-    def __setitem__(self, key, value):
-        self._config[key] = value
-        with open(self._file, "w") as f:
-            dump(self._config, f, indent=4)
-
-
-Config = Config(file="./config.json")
+redis = Redis(
+    host=Config["redis"]["host"],
+    port=Config["redis"]["port"],
+    db=Config["redis"]["db"],
+    password=Config["redis"]["password"],
+)

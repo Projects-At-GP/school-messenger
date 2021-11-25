@@ -1,15 +1,18 @@
 import datetime
 from .database import DataBase
+from .config import Config
 
 
 __all__ = (
     "is_authorized",
     "has_user_agent",
-    "generate_id"
+    "generate_id",
+    "get_user_type",
+    "database",
 )
 
 
-database = DataBase("database.sqlite")
+database = DataBase(Config["database"]["file"], Config["database"]["log level"])
 
 
 def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
@@ -76,3 +79,27 @@ def generate_id(type=0):  # noqa
     now = datetime.datetime.utcnow()
     unix = (now - datetime.datetime(1970, 1, 1)).total_seconds()
     return (int(unix * 1000 - 1609455600000) << 15) + (type << 11) + increment
+
+
+def get_user_type(request):
+    """
+    Parameters
+    ----------
+    request: NAA.APIRequest
+
+    Returns
+    -------
+    tuple[str, typing.Union[int, str]]
+    """
+    user_type = "admin"  # static at the moment...  # FixMe: FOR PRODUCTION THIS MUST BE "user" OR DYNAMIC!!!
+    user_id = 0
+    token = (request.get("Authorization", default="/").split() + [""])[1]
+    if token:
+        data = database.account_info(token=token)
+        if data:
+            user_id = data[0]
+
+    if not user_id:
+        user_id = request.ip
+
+    return user_type, user_id

@@ -4,9 +4,7 @@ from NAA.web import API
 from .base import VersionBase
 
 
-__all__ = (
-    "V2",
-)
+__all__ = ("V2",)
 
 
 # all from v1
