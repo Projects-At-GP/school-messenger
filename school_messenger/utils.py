@@ -1,4 +1,7 @@
 import datetime
+import typing
+from time import sleep
+from threading import Thread
 from .database import DataBase
 from .config import Config
 
@@ -9,6 +12,7 @@ __all__ = (
     "generate_id",
     "get_user_type",
     "database",
+    "create_log_deleter_runner",
 )
 
 
@@ -103,3 +107,36 @@ def get_user_type(request):
         user_id = request.ip
 
     return user_type, user_id
+
+
+def create_log_deleter_runner(
+    *,
+    up_to: typing.Union[datetime.datetime, int] = 24 * 7,
+    start_after: float = 5,
+    interval: float = 60 * 60,
+) -> Thread:
+    """
+    Creates a thread which automatically updates the latency displayed on statuspage.io.
+
+    Parameters
+    ----------
+    up_to: datetime.datetime, int
+    start_after: float
+        The pause before deleting first time (in s).
+    interval: float
+        The delete interval (in s).
+
+    Returns
+    -------
+    Thread
+    """
+
+    def runner():
+        sleep(start_after)
+        while True:
+            database.delete_old_logs(up_to=up_to)
+            sleep(interval)
+
+    deleter = Thread(target=runner, name="<Thread: Automatic Log Deleter>", daemon=True)
+    deleter.start()
+    return deleter

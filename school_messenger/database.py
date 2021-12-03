@@ -1,8 +1,9 @@
 import sqlite3
+import typing
 from hashlib import sha512
 from secrets import token_bytes
 from base64 import b64encode, b64decode
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 __all__ = ("DataBase",)
@@ -369,17 +370,19 @@ class LogDB(DatabaseBase):
         Parameters
         ----------
         level: int
-        version, ip, msg: str
-        headers: dict
+        version, ip: str, optional
+        msg: str
+        headers: dict, optional
         """
         if level >= self._log_level:
             with self as db:
                 now = datetime.utcnow().isoformat(sep=" ")
                 ip = ip or "nA"
+                version = version or "nA"
                 msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
-                headers = b64encode(str(headers).encode("utf-8", "ignore")).decode(
-                    "utf-8"
-                )
+                headers = b64encode(
+                    str(headers or {}).encode("utf-8", "ignore")
+                ).decode("utf-8")
                 db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg, headers))
                 print(
                     f"\033[32m{now}\033[0m\t"
@@ -389,6 +392,45 @@ class LogDB(DatabaseBase):
                     f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
                     f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m"
                 )
+
+    def delete_old_logs(self, up_to: typing.Union[datetime, int]):
+        """
+        Deletes old logs.
+
+        Parameters
+        ----------
+        up_to: datetime, int  # in days if int
+            If datetime is given all logs until the date 'll be deleted.
+            Otherwise the logs older than n days 'll be deleted.
+
+        Returns
+        -------
+        int
+            The amount of deleted logs.
+        """
+        if isinstance(up_to, (int, float)):
+            up_to = datetime.utcnow() - timedelta(days=up_to)
+
+        with self as db:
+            db.execute(
+                f"SELECT null FROM {self.__TABLE_LOGS__} "
+                f"WHERE date < {up_to.isoformat(sep=' ')!r}"
+            )
+            many = len(db.fetchall())
+            db.execute(
+                f"DELETE FROM {self.__TABLE_LOGS__} "
+                f"WHERE date < {up_to.isoformat(sep=' ')!r}"
+            )
+
+        self.add_log(
+            level=self.LOG_LEVEL["INFO"],
+            version=None,
+            ip=None,
+            msg=f"{many} logs deleted from log",
+            headers={"reason": f"older than {up_to.isoformat(sep=' ')}"},
+        )
+
+        return many
 
 
 class DataBase(AccountDB, MessageDB, LogDB):
