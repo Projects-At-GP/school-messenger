@@ -1,5 +1,7 @@
 import datetime
+import traceback
 import typing
+import functools
 from time import sleep
 from threading import Thread
 from .database import DataBase
@@ -7,6 +9,7 @@ from .config import Config
 
 
 __all__ = (
+    "error_logger",
     "is_authorized",
     "has_user_agent",
     "generate_id",
@@ -17,6 +20,67 @@ __all__ = (
 
 
 database = DataBase(Config["database"]["file"], Config["database"]["log level"])
+
+
+def error_logger(
+    *,
+    log_level: int = database.LOG_LEVEL["ERROR"],
+    restart_if_fails: bool = True,
+    restart_timeout: typing.Optional[float] = 0,
+) -> typing.Callable[[typing.Callable], typing.Callable]:
+    """
+    Logs errors and restarts the task if needed.
+
+    Parameters
+    ----------
+    log_level: int
+        The level the errors should be logged with.
+    restart_if_fails: bool
+        Whether the task should be restarted if it fails.
+    restart_timeout: float, optional
+        The pause until the task 'll be rerun (in s).
+
+    Returns
+    -------
+    typing.Callable[[typing.Callable], typing.Callable]
+    """
+    if restart_timeout is None:
+        restart_timeout = 0.0
+    elif not isinstance(restart_timeout, float):
+        restart_timeout = float(restart_timeout)  # type: ignore
+
+    def outer(clb, /):
+        """
+        Parameters
+        ----------
+        clb: callable
+
+        Returns
+        -------
+        callable
+        """
+
+        def inner(*args, **kwargs):
+            while True:
+                try:
+                    return clb(*args, **kwargs)
+                except Exception as e:
+                    database.add_log(
+                        level=log_level,
+                        version=None,
+                        ip=None,
+                        msg="".join(
+                            traceback.format_exception(None, e, e.__traceback__)
+                        ).rstrip("\n"),
+                        headers={"retry": restart_if_fails, "timeout": restart_timeout},
+                    )
+                    if not restart_if_fails:
+                        return
+                    sleep(restart_timeout)
+
+        return functools.update_wrapper(inner, clb)
+
+    return outer
 
 
 def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
@@ -131,6 +195,7 @@ def create_log_deleter_runner(
     Thread
     """
 
+    @error_logger()
     def runner():
         sleep(start_after)
         while True:

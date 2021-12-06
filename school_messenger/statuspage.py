@@ -2,7 +2,7 @@ from threading import Thread
 from time import time, sleep, perf_counter
 from requests import request
 from .config import Config
-from .utils import database
+from .utils import database, error_logger
 
 
 __all__ = (
@@ -76,7 +76,7 @@ def update_latency(
         metric=metric,
     )
     data = {
-        "data[timestamp]": timestamp or time() + 20 * 60 * 60,
+        "data[timestamp]": timestamp or time(),
         "data[value]": ms,
     }
 
@@ -114,6 +114,7 @@ def create_latency_update_runner(
     Thread
     """
 
+    @error_logger(restart_timeout=60)
     def runner():
         sleep(start_after)
         while True:
@@ -126,7 +127,9 @@ def create_latency_update_runner(
             sleep(interval)
 
     updater = Thread(
-        target=runner, name="<Thread: Automatic Latency Updater>", daemon=True
+        target=runner,
+        name="<Thread: Automatic Latency Updater>",
+        daemon=True,
     )
     updater.start()
     return updater
