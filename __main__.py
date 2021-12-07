@@ -48,10 +48,7 @@ api.add_version(version=2, fallback=V1)(V2)
 create_latency_update_runner(**Config["runner"]["latency updater"])
 create_log_deleter_runner(**Config["runner"]["log deleter"])
 
-run = error_logger(
-    log_level=5,
-    restart_timeout=60,
-)(api.run_api)
+run = error_logger(log_level=5, retry_timeout=60)(api.run_api)
 run(
     debug=Config["server"]["debug"],
     reload=Config["server"]["reload"],

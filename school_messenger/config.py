@@ -74,7 +74,7 @@ DEFAULT_CONFIG = {
         "log deleter": {
             "start_after": 5,
             "interval": 60 * 60,  # 60 minutes / 1 hour
-            "up_to": 24 * 7,  # 168 hours / 1 week
+            "up_to": 7,  # 7 days / 1 week
         },
     },
 }

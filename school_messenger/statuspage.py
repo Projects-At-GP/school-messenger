@@ -114,7 +114,7 @@ def create_latency_update_runner(
     Thread
     """
 
-    @error_logger(restart_timeout=60)
+    @error_logger(retry_timeout=60)
     def runner():
         sleep(start_after)
         while True:

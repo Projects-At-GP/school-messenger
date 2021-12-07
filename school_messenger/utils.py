@@ -25,8 +25,8 @@ database = DataBase(Config["database"]["file"], Config["database"]["log level"])
 def error_logger(
     *,
     log_level: int = database.LOG_LEVEL["ERROR"],
-    restart_if_fails: bool = True,
-    restart_timeout: typing.Optional[float] = 0,
+    retry_on_error: bool = True,
+    retry_timeout: typing.Optional[float] = 0,
 ) -> typing.Callable[[typing.Callable], typing.Callable]:
     """
     Logs errors and restarts the task if needed.
@@ -35,19 +35,19 @@ def error_logger(
     ----------
     log_level: int
         The level the errors should be logged with.
-    restart_if_fails: bool
+    retry_on_error: bool
         Whether the task should be restarted if it fails.
-    restart_timeout: float, optional
+    retry_timeout: float, optional
         The pause until the task 'll be rerun (in s).
 
     Returns
     -------
     typing.Callable[[typing.Callable], typing.Callable]
     """
-    if restart_timeout is None:
-        restart_timeout = 0.0
-    elif not isinstance(restart_timeout, float):
-        restart_timeout = float(restart_timeout)  # type: ignore
+    if retry_timeout is None:
+        retry_timeout = 0.0
+    elif not isinstance(retry_timeout, float):
+        retry_timeout = float(retry_timeout)  # type: ignore
 
     def outer(clb, /):
         """
@@ -72,11 +72,11 @@ def error_logger(
                         msg="".join(
                             traceback.format_exception(None, e, e.__traceback__)
                         ).rstrip("\n"),
-                        headers={"retry": restart_if_fails, "timeout": restart_timeout},
+                        headers={"retry": retry_on_error, "timeout": retry_timeout},
                     )
-                    if not restart_if_fails:
+                    if not retry_on_error:
                         return
-                    sleep(restart_timeout)
+                    sleep(retry_timeout)
 
         return functools.update_wrapper(inner, clb)
 
@@ -175,7 +175,7 @@ def get_user_type(request):
 
 def create_log_deleter_runner(
     *,
-    up_to: typing.Union[datetime.datetime, int] = 24 * 7,
+    up_to: typing.Union[datetime.datetime, int] = 7,
     start_after: float = 5,
     interval: float = 60 * 60,
 ) -> Thread:
@@ -185,6 +185,8 @@ def create_log_deleter_runner(
     Parameters
     ----------
     up_to: datetime.datetime, int
+        The max age a log is allowed to have.
+        If integer is given: N in days.
     start_after: float
         The pause before deleting first time (in s).
     interval: float
@@ -202,6 +204,10 @@ def create_log_deleter_runner(
             database.delete_old_logs(up_to=up_to)
             sleep(interval)
 
-    deleter = Thread(target=runner, name="<Thread: Automatic Log Deleter>", daemon=True)
+    deleter = Thread(
+        target=runner,
+        name="<Thread: Automatic Log Deleter>",
+        daemon=True,
+    )
     deleter.start()
     return deleter
