@@ -50,7 +50,12 @@ DEFAULT_CONFIG = {
             "amount": 60,
             "interval": 60,
             "timeout": 10
-        }
+        },
+        "over ip": {
+            "amount": 10,
+            "interval": 60,
+            "timeout": 30
+        },
     },
 
     "statuspage.io": {
