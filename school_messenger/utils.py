@@ -174,13 +174,19 @@ def get_user_type(request):
     -------
     tuple[str, typing.Union[int, str]]
     """
-    user_type = "admin"  # static at the moment...  # FixMe: FOR PRODUCTION THIS MUST BE "user" OR DYNAMIC!!!
     user_id = 0
+    user_type = "over ip"  # default value
     token = (request.get("Authorization", default="/").split() + [""])[1]
     if token:
         data = database.account_info(token=token)
         if data:
             user_id = data[0]
+            raw_user_type = get_id_type(user_id)
+            if raw_user_type:
+                if raw_user_type == 1:
+                    user_type = "user"
+                elif raw_user_type == 31:
+                    user_type = "admin"
 
     if not user_id:
         user_id = request.ip
