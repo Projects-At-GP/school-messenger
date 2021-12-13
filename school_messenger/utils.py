@@ -146,7 +146,22 @@ def generate_id(type=0):  # noqa
     increment = __INCREMENT
     now = datetime.datetime.utcnow()
     unix = (now - datetime.datetime(1970, 1, 1)).total_seconds()
-    return (int(unix * 1000 - 1609455600000) << 15) + (type << 11) + increment
+    return (int(unix * 1000 - 1609455600000) << 16) + (type << 11) + increment
+
+
+def get_id_type(
+    id: int,  # noqa
+) -> int:
+    """
+    Parameters
+    ----------
+    id: int
+
+    Returns
+    -------
+    int
+    """
+    return (id & 65535) >> 11  # retrieves the type (WHITEPAPER.md)
 
 
 def get_user_type(request):

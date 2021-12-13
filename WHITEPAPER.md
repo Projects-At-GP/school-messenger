@@ -210,34 +210,36 @@ The IDs used in the messenger.
 ### ID Technical
 - unsigned 64 bit integer
 
-| Field           | Timestamp (UTC)                                  | Type                          | Increment                        |
-|:----------------|:-------------------------------------------------|:------------------------------|:---------------------------------|
-| **Binary**      | 000000000000000000000000000000000000000000000000 | 00000                         | 00000000000                      |
-| **Bits**        | 63 to 15                                         | 15 to 11                      | 11 to 0                          |
-| **Total Bits**  | 48                                               | 5                             | 11                               |
-| **Description** | ms since `EPOCH`                                 | the type (message, user, ...) | increment to prevent doubled IDs |
-| **Retrieval**   | ( `ID` >> 15 ) + `EPOCH`                         | (`ID` & F800 ) >> 0x1F        | `ID` & 0x7FF                     |
+| Field                   | Timestamp (UTC)                                  | Type                          | Increment                        |
+|:------------------------|:-------------------------------------------------|:------------------------------|:---------------------------------|
+| **Binary**              | 000000000000000000000000000000000000000000000000 | 00000                         | 00000000000                      |
+| **Bits**                | 63 to 15                                         | 15 to 11                      | 11 to 0                          |
+| **Total Bits**          | 48                                               | 5                             | 11                               |
+| **Description**         | ms since `EPOCH`                                 | the type (message, user, ...) | increment to prevent doubled IDs |
+| **Retrieval (decimal)** | ( `ID` >> 16 ) + `EPOCH`                         | (`ID` & 65535 ) >> 31         | `ID` & 2047                      |
+| **Retrieval (hex)**     | ( `ID` >> 0x10) + `EPOCH`                        | (`ID` & 0xffff ) >> 0x1f      | `ID` & 0x7ff                     |
 
 The above-mentioned `EPOCH` is `1609455600000` (UNIX timestamp from *`01/01/2021 00:00`*)
 
 ### ID Types
-| Value | Type      |
-|:-----:|:----------|
-| **0** | undefined |
-| **1** | user      |
-| **2** | message   |
+| Value  | Type      |
+|:------:|:----------|
+| **0**  | undefined |
+| **1**  | user      |
+| **2**  | message   |
+| **31** | admin     |
 
 ## Status Codes
 All used status codes by the messenger:
 
 | Code | Meaning                                             | Everything OK? |
 |:----:|:----------------------------------------------------|:--------------:|
-| 200  | OK                                                  | Yes            |
-| 201  | Created                                             | Yes            |
-| 204  | No Content (nothing to say...)                      | Yes            |
-| 400  | Bad Request (mal formed or missing Header)          | No             |
-| 401  | Unauthorized (missing `Authorization`/`User-Agent`) | No             |
-| 403  | Forbidden                                           | No             |
-| 404  | Not Found                                           | No             |
-| 405  | Method Not Allowed                                  | No             |
-| 5XX  | Internal Server Error (sorry if you see them)       | No             |
+| 200  | OK                                                  |      Yes       |
+| 201  | Created                                             |      Yes       |
+| 204  | No Content (nothing to say...)                      |      Yes       |
+| 400  | Bad Request (mal formed or missing Header)          |       No       |
+| 401  | Unauthorized (missing `Authorization`/`User-Agent`) |       No       |
+| 403  | Forbidden                                           |       No       |
+| 404  | Not Found                                           |       No       |
+| 405  | Method Not Allowed                                  |       No       |
+| 5XX  | Internal Server Error (sorry if you see them)       |       No       |
