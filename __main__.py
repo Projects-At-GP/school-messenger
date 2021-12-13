@@ -6,7 +6,11 @@ import AlbertUnruhUtils
 
 from school_messenger.config import Config
 from school_messenger.statuspage import create_latency_update_runner
-from school_messenger.utils import create_log_deleter_runner, error_logger
+from school_messenger.utils import (
+    create_log_deleter_runner,
+    create_message_deleter_runner,
+    error_logger,
+)
 
 from school_messenger.versions import (
     V0,
@@ -47,6 +51,7 @@ api.add_version(version=2, fallback=V1)(V2)
 # create background tasks
 create_latency_update_runner(**Config["runner"]["latency updater"])
 create_log_deleter_runner(**Config["runner"]["log deleter"])
+create_message_deleter_runner(**Config["runner"]["message deleter"])
 
 run = error_logger(log_level=5, retry_timeout=60)(api.run_api)
 run(

@@ -13,9 +13,11 @@ __all__ = (
     "is_authorized",
     "has_user_agent",
     "generate_id",
+    "get_id_type",
     "get_user_type",
     "database",
     "create_log_deleter_runner",
+    "create_message_deleter_runner",
 )
 
 
@@ -201,7 +203,7 @@ def create_log_deleter_runner(
     interval: float = 60 * 60,
 ) -> Thread:
     """
-    Creates a thread which automatically updates the latency displayed on statuspage.io.
+    Creates a thread which automatically deletes old logs.
 
     Parameters
     ----------
@@ -211,7 +213,7 @@ def create_log_deleter_runner(
     start_after: float
         The pause before deleting first time (in s).
     interval: float
-        The delete interval (in s).
+        The delete-interval (in s).
 
     Returns
     -------
@@ -228,6 +230,46 @@ def create_log_deleter_runner(
     deleter = Thread(
         target=runner,
         name="<Thread: Automatic Log Deleter>",
+        daemon=True,
+    )
+    deleter.start()
+    return deleter
+
+
+def create_message_deleter_runner(
+    *,
+    up_to: typing.Union[datetime.datetime, int] = 7,
+    start_after: float = 5,
+    interval: float = 60 * 60,
+) -> Thread:
+    """
+    Creates a thread which automatically deletes old messages.
+
+    Parameters
+    ----------
+    up_to: datetime.datetime, int
+        The max age a message is allowed to have.
+        If integer is given: N in days.
+    start_after: float
+        The pause before deleting first time (in s).
+    interval: float
+        The delete-interval (in s).
+
+    Returns
+    -------
+    Thread
+    """
+
+    @error_logger()
+    def runner():
+        sleep(start_after)
+        while True:
+            database.delete_old_messages(up_to=up_to)
+            sleep(interval)
+
+    deleter = Thread(
+        target=runner,
+        name="<Thread: Automatic Message Deleter>",
         daemon=True,
     )
     deleter.start()

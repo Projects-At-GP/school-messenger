@@ -71,12 +71,17 @@ DEFAULT_CONFIG = {
     # automated background tasks
     "runner": {
         "latency updater": {
-            "start_after": 10,
+            "start_after": 15,
             "interval": 60 * 5,  # 5 minutes
             "target": f"http://127.0.0.1:{3333}",  # default port from this config
             "method": "GET",
         },
         "log deleter": {
+            "start_after": 10,
+            "interval": 60 * 60,  # 60 minutes / 1 hour
+            "up_to": 7,  # 7 days / 1 week
+        },
+        "message deleter": {
             "start_after": 5,
             "interval": 60 * 60,  # 60 minutes / 1 hour
             "up_to": 7,  # 7 days / 1 week

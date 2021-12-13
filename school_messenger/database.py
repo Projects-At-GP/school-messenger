@@ -334,6 +334,64 @@ class MessageDB(DatabaseBase):
                 for msg in msgs
             ]
 
+    def delete_old_messages(
+        self,
+        up_to: typing.Union[datetime, int],
+        *,
+        already_id: bool = False,
+    ) -> int:
+        """
+        Deletes old messages.
+
+        Parameters
+        ----------
+        up_to: datetime, int  # in days if int
+            Is datetime is given all messages until the date 'll be deleted.
+            Otherwise, the messages older than n days 'll be deleted.
+        already_id: bool
+            Whether `up_to` should *not* be converted to an id.
+
+        Returns
+        -------
+        int
+            The amount of deleted messages.
+        """
+        if not already_id:
+            if isinstance(up_to, datetime):
+                up_to = up_to.timestamp() * 1000
+            raise NotImplementedError  # ToDo
+
+        with self as db:
+            # fmt: off
+            db.execute(
+                f"SELECT null FROM {self.__TABLE_MESSAGES__} "
+                f"WHERE id < {up_to}"
+            )
+            many = len(db.fetchall())
+            db.execute(
+                f"DELETE FROM {self.__TABLE_MESSAGES__} "
+                f"WHERE id < {up_to}"
+            )
+            # fmt: on
+
+        # if we run this class directly and not from :class:`DataBase`
+        if not isinstance(self, LogDB):
+            log_db = LogDB(self.database)
+        else:
+            log_db = self
+
+        log_db.add_log(
+            level=log_db.LOG_LEVEL["INFO"],
+            version=None,
+            ip=None,
+            msg=f"{many} messages deleted from database",
+            headers={
+                "reason": f"older than {datetime.fromtimestamp((up_to >> 16 ) + 1609455600000).isoformat(sep=' ')}"
+            },
+        )
+
+        return many
+
 
 class LogDB(DatabaseBase):
     __TABLE_LOGS__ = "logs"
@@ -400,8 +458,8 @@ class LogDB(DatabaseBase):
         Parameters
         ----------
         up_to: datetime, int  # in days if int
-            If datetime is given all logs until the date 'll be deleted.
-            Otherwise the logs older than n days 'll be deleted.
+            Is datetime is given all logs until the date 'll be deleted.
+            Otherwise, the logs older than n days 'll be deleted.
 
         Returns
         -------
