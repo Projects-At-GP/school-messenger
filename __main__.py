@@ -1,4 +1,7 @@
+from json import load
+
 import NAA
+from NAA.models import APIResponse
 from NAA.web import API
 
 import AlbertUnruhUtils
@@ -19,20 +22,26 @@ from school_messenger.versions import (
 )
 
 
-NAA_REQUIRED_MIN_VERSION = "2021.10.26.005"
-AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.10.26.000"
+NAA_REQUIRED_MIN_VERSION = "2021.12.14.000"
+AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.11.13.000"
 
-if NAA.__version__ < NAA_REQUIRED_MIN_VERSION:
-    raise RuntimeError(
-        "NAA out of date! (require at least version %s instead of %s)"
-        % (NAA_REQUIRED_MIN_VERSION, NAA.__version__)
-    )
 
-if AlbertUnruhUtils.__version__ < AlbertUnruhUtils_REQUIRED_MIN_VERSION:
-    raise RuntimeError(
-        "AlbertUnruhUtils out of date! (require at least version %s instead of %s)"
-        % (AlbertUnruhUtils_REQUIRED_MIN_VERSION, AlbertUnruhUtils.__version__)
-    )
+@error_logger(log_level=5, raise_on_error=True)
+def check_lib_versions():
+    if NAA.__version__ < NAA_REQUIRED_MIN_VERSION:
+        raise RuntimeError(
+            "NAA out of date! (require at least version %s instead of %s)"
+            % (NAA_REQUIRED_MIN_VERSION, NAA.__version__)
+        )
+
+    if AlbertUnruhUtils.__version__ < AlbertUnruhUtils_REQUIRED_MIN_VERSION:
+        raise RuntimeError(
+            "AlbertUnruhUtils out of date! (require at least version %s instead of %s)"
+            % (AlbertUnruhUtils_REQUIRED_MIN_VERSION, AlbertUnruhUtils.__version__)
+        )
+
+
+check_lib_versions()  # in a call because so errors can be logged
 
 
 api = API(
@@ -47,6 +56,11 @@ api = API(
 api.add_version(version=0)(V0)  # test-version without database
 api.add_version(version=1)(V1)
 api.add_version(version=2, fallback=V1)(V2)
+
+# add default endpoint
+with open("main-response.json") as f:
+    default_response = load(f)
+api.default_endpoint(lambda *_: APIResponse(default_response))
 
 # create background tasks
 create_latency_update_runner(**Config["runner"]["latency updater"])

@@ -29,6 +29,7 @@ def error_logger(
     log_level: int = database.LOG_LEVEL["ERROR"],
     retry_on_error: bool = True,
     retry_timeout: typing.Optional[float] = 0,
+    raise_on_error: bool = False,
 ) -> typing.Callable[[typing.Callable], typing.Callable]:
     """
     Logs errors and restarts the task if needed.
@@ -41,6 +42,8 @@ def error_logger(
         Whether the task should be restarted if it fails.
     retry_timeout: float, optional
         The pause until the task 'll be rerun (in s).
+    raise_on_error: bool
+        Whether the error should be raised after it's logged.
 
     Returns
     -------
@@ -76,6 +79,8 @@ def error_logger(
                         ).rstrip("\n"),
                         headers={"retry": retry_on_error, "timeout": retry_timeout},
                     )
+                    if raise_on_error:
+                        raise
                     if not retry_on_error:
                         return
                     sleep(retry_timeout)
