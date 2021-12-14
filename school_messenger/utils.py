@@ -181,7 +181,7 @@ def get_user_type(request):
     -------
     tuple[str, typing.Union[int, str]]
     """
-    user_id = 0
+    user_id = request.ip
     user_type = "over ip"  # default value
     token = (request.get("Authorization", default="/").split() + [""])[1]
     if token:
@@ -194,9 +194,6 @@ def get_user_type(request):
                     user_type = "user"
                 elif raw_user_type == 31:
                     user_type = "admin"
-
-    if not user_id:
-        user_id = request.ip
 
     return user_type, user_id
 
