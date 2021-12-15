@@ -9,6 +9,10 @@
 - [Communication (Client-Server)](#communication)
     - [Request](#request)
     - [Response](#response)
+- [Rate Limit](#rate-limit)
+    - [Reason](#rate-limit-reason)
+    - [Structure](#rate-limit-structure)
+    - [Notes](#rate-limit-notes)
 - [Account](#account)
     - [Info](#account-info)
     - [Create](#create-account)
@@ -22,10 +26,14 @@
     - [Types](#id-types)
 - [Status Codes](#status-codes)
 
+
 ## Connection
 You can connect by just calling the ˝REST˝full-API.
 The HOST and PORT must be provided by the host, but by default you can use the PORT `3333`.
-> Note: at the moment the connection goes over **`HTTP`** and *not* `HTTPS`
+> Note: at the moment the connection goes over **`HTTP`** and *not* `HTTPS`.
+
+All endpoints are listed in this document with their versions and the endpoint no-endpoint (just `/`) provides some
+useful information.
 
 ### Versions
 The API is split into versions to keep "old" clients running, even if the structure of the response ect have changed.
@@ -55,7 +63,44 @@ User-Agent:     SchoolMessengerExamples Python3.9
 The response-content is a `application/json`-response and always provides the field `message`.
 This field is provided to make sure, a status-code won't be misinterpreted
 (e.g. `404` can mean `Page Not Found` or `Entry Not Found`).
+
+Additionally, there is *every time* the `request`-field which provides information about
+the current [rate limit](#rate-limit) for you.
+
 > *All other fields are described in the sections below where you can see how requests and responses are build.*
+
+
+## Rate Limit
+### Rate Limit Reason
+To prevent spamming we decided to add rate limiting, which means that you can send only a limited number of
+requests per time-unit.
+We try to keep the values balanced, so if you use the API normal you shouldn't run into trouble with the system 🙂.
+
+### Rate Limit Structure
+The value of the field `request` looks like this:
+```json
+{
+  "remaining": 60,
+  "limit": 60,
+  "period": 60,
+  "timeout": 0
+}
+```
+The field `remaining` displays the remaining counts of requests you have.
+
+The field `limit` displays you maximum request-count.
+
+The field `period` displays the period (in s) for the `limit`.
+
+The field `timeout` displays the timeout (in s) you have. If you see this value being higher than `0` you should wait
+the amount displayed there.
+
+### Rate Limit Notes
+You should try to sync your rate-limit-data with the data in the response and please respect the remaining requests,
+the timeout-period can be big ^^.
+Noteworthy is that you have while logging in a small limit of requests because there your ip and not your account is
+used to calculate the rate-limit, so look it all up closely.
+
 
 ## Account
 ### Account Info
@@ -242,4 +287,5 @@ All used status codes by the messenger:
 | 403  | Forbidden                                           |       No       |
 | 404  | Not Found                                           |       No       |
 | 405  | Method Not Allowed                                  |       No       |
+| 429  | To Many Requests (*respect the rate-limit!*)        |       No       |
 | 5XX  | Internal Server Error (sorry if you see them)       |       No       |
