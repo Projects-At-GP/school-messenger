@@ -345,9 +345,11 @@ class MessageDB(DatabaseBase):
 
         Parameters
         ----------
-        up_to: datetime, int  # in days if int
+        up_to: datetime, int  # in days if int and not already_id
             Is datetime is given all messages until the date 'll be deleted.
             Otherwise, the messages older than n days 'll be deleted.
+            The above-mentioned behavior is only active if already_id is *not*
+            False (already_id=True), otherwise up_to is treated as a final id.
         already_id: bool
             Whether `up_to` should *not* be converted to an id.
 
@@ -357,9 +359,11 @@ class MessageDB(DatabaseBase):
             The amount of deleted messages.
         """
         if not already_id:
+            if isinstance(up_to, int):
+                up_to = datetime.now() - timedelta(days=up_to)
             if isinstance(up_to, datetime):
                 up_to = up_to.timestamp() * 1000
-            raise NotImplementedError  # ToDo
+            up_to = int(up_to - 1609455600000) << 16
 
         with self as db:
             # fmt: off
@@ -380,14 +384,15 @@ class MessageDB(DatabaseBase):
         else:
             log_db = self
 
+        date = datetime.fromtimestamp(((up_to >> 16) + 1609455600000) / 1000).isoformat(
+            sep=" "
+        )
         log_db.add_log(
             level=log_db.LOG_LEVEL["INFO"],
             version=None,
             ip=None,
             msg=f"{many} messages deleted from database",
-            headers={
-                "reason": f"older than {datetime.fromtimestamp((up_to >> 16 ) + 1609455600000).isoformat(sep=' ')}"
-            },
+            headers={"reason": f"older than {date}"},
         )
 
         return many
