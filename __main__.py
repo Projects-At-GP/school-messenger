@@ -5,14 +5,16 @@ from NAA.models import APIResponse
 from NAA.web import API
 
 import AlbertUnruhUtils
+from AlbertUnruhUtils.ratelimit import ServerRateLimit
 
 
-from school_messenger.config import Config
+from school_messenger.config import Config, redis
 from school_messenger.statuspage import create_latency_update_runner
 from school_messenger.utils import (
     create_log_deleter_runner,
     create_message_deleter_runner,
     error_logger,
+    get_user_type,
 )
 
 from school_messenger.versions import (
@@ -60,7 +62,13 @@ api.add_version(version=2, fallback=V1)(V2)
 # add default endpoint
 with open("main-response.json") as f:
     default_response = load(f)
-api.default_endpoint(lambda *_: APIResponse(default_response))
+
+
+@api.default_endpoint
+@ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
+def _(*_):
+    return APIResponse(default_response)
+
 
 # create background tasks
 create_latency_update_runner(**Config["runner"]["latency updater"])

@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
             "interval": 60,
             "timeout": 10
         },
-        "over ip": {
+        "over_ip": {
             "amount": 10,
             "interval": 60,
             "timeout": 30

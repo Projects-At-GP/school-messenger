@@ -182,7 +182,7 @@ def get_user_type(request):
     tuple[str, typing.Union[int, str]]
     """
     user_id = request.ip
-    user_type = "over ip"  # default value
+    user_type = "over_ip"  # default value
     token = (request.get("Authorization", default="/").split() + [""])[1]
     if token:
         data = database.account_info(token=token)
