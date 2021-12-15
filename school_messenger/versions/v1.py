@@ -37,6 +37,13 @@ class V1(VersionBase):
                 return 400, "Missing `Query`!"
             data = database.account_info(query=query)
             if not data:
+                database.add_log(
+                    level=database.LOG_LEVEL["INFO"],
+                    version=request.version,
+                    ip=request.ip,
+                    msg=f"user {query!r} not found",
+                    headers=request.headers,
+                )
                 return 404, "User Not Found!"
             return {"name": data[1], "id": str(data[0])}
 
@@ -64,6 +71,13 @@ class V1(VersionBase):
                     return 400, "Missing `Name` and/or `Password`!"
                 data = database.add_account(name, password)
                 if data is False:
+                    database.add_log(
+                        level=database.LOG_LEVEL["INFO"],
+                        version=request.version,
+                        ip=request.ip,
+                        msg=f"can't create account {name!r}",
+                        headers=request.headers,
+                    )
                     return 400, "Incorrect `Name`! (Already registered or numeric!)"
                 database.add_log(
                     level=database.LOG_LEVEL["INFO"],
