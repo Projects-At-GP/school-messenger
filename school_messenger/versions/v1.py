@@ -68,6 +68,13 @@ class V1(VersionBase):
                         (password := request.get("Password", "")),
                     ]
                 ):
+                    database.add_log(
+                        level=database.LOG_LEVEL["INFO"],
+                        version=request.version,
+                        ip=request.ip,
+                        msg=f"missing name/password while creating account",
+                        headers=request.headers,
+                    )
                     return 400, "Missing `Name` and/or `Password`!"
                 data = database.add_account(name, password)
                 if data is False:
@@ -75,7 +82,7 @@ class V1(VersionBase):
                         level=database.LOG_LEVEL["INFO"],
                         version=request.version,
                         ip=request.ip,
-                        msg=f"can't create account {name!r}",
+                        msg=f"can't create account {name!r} (already registered/is numeric)",
                         headers=request.headers,
                     )
                     return 400, "Incorrect `Name`! (Already registered or numeric!)"
@@ -127,9 +134,23 @@ class V1(VersionBase):
                     (password := request.get("Password", "")),
                 ]
             ):
+                database.add_log(
+                    level=database.LOG_LEVEL["DEBUG"],
+                    version=request.version,
+                    ip=request.ip,
+                    msg=f"missing name/password while requesting token",
+                    headers=request.headers,
+                )
                 return 400, "Missing `Name` and/or `Password`!"
             data = database.account_token(name, password)
             if data is None:
+                database.add_log(
+                    level=database.LOG_LEVEL["DEBUG"],
+                    version=request.version,
+                    ip=request.ip,
+                    msg=f"invalid name/password while requesting token",
+                    headers=request.headers,
+                )
                 return 401
             return {"Token": data}
 
@@ -150,6 +171,13 @@ class V1(VersionBase):
                         .isnumeric(),
                     ]
                 ):
+                    database.add_log(
+                        level=database.LOG_LEVEL["DEBUG"],
+                        version=request.version,
+                        ip=request.ip,
+                        msg=f"invalid amount/before/after while requesting message history",
+                        headers=request.headers,
+                    )
                     return (
                         400,
                         "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)",
@@ -176,6 +204,13 @@ class V1(VersionBase):
 
             if request.method == "POST":
                 if not all([(content := request.get("Content", ""))]):
+                    database.add_log(
+                        level=database.LOG_LEVEL["DEBUG"],
+                        version=request.version,
+                        ip=request.ip,
+                        msg=f"can't create empty message",
+                        headers=request.headers,
+                    )
                     return 400, "Missing `Content`!"
                 author = database.account_info(
                     token=request.get("Authorization").split()[1]
