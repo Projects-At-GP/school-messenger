@@ -316,12 +316,12 @@ class MessageDB(DatabaseBase):
             # 18446744073709551615 -> 1111111111111111111111111111111111111111111111111111111111111111
             before = 18446744073709551615
         else:
-            before = ((before - 1609455600000) << 15) + 65535
+            before = ((before - 1609455600000) << 16) + 65535
         if after == -1:
             # 0 -> 0000000000000000000000000000000000000000000000000000000000000000
             after = 0
         else:
-            after = (after - 1609455600000) << 15
+            after = (after - 1609455600000) << 16
 
         with self as db:
             db.execute(
@@ -455,6 +455,43 @@ class LogDB(DatabaseBase):
                     f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
                     f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m"
                 )
+
+    def get_logs(self, maximum=-1, before=-1, after=-1):
+        """
+        Parameters
+        ----------
+        maximum, before, after: int
+
+        Returns
+        -------
+        list[tuple[str, str, str, str, str, str]]
+        """
+        if before == -1:
+            before = datetime(9999, 12, 31, 23, 59, 59, 59)
+        else:
+            before = datetime.fromtimestamp(before / 1000)
+        if after == -1:
+            after = datetime(1, 1, 1)
+        else:
+            after = datetime.fromtimestamp(after / 1000)
+
+        with self as db:
+            db.execute(
+                f"SELECT * FROM {self.__TABLE_LOGS__!r} "
+                f"WHERE {before.isoformat(sep=' ')!r} > date > {after.isoformat(sep=' ')!r} ORDER BY date DESC"
+            )
+            logs = db.fetchmany(maximum)
+            return [
+                (
+                    log[0],
+                    str(log[1]),
+                    log[2],
+                    log[3],
+                    b64decode(log[4].encode("utf-8")).decode(),
+                    b64decode(log[5].encode("utf-8")).decode(),
+                )
+                for log in logs
+            ]
 
     def delete_old_logs(self, up_to: typing.Union[datetime, int]):
         """
