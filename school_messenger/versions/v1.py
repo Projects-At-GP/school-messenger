@@ -91,6 +91,7 @@ class V1(VersionBase):
                     version=request.version,
                     ip=request.ip,
                     msg=f"add account {name!r}",
+                    headers={},
                 )
                 return 201, {"Token": data}
 
