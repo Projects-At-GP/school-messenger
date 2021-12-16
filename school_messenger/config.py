@@ -75,6 +75,7 @@ DEFAULT_CONFIG = {
             "interval": 60 * 5,  # 5 minutes
             "target": f"http://127.0.0.1:{3333}",  # default port from this config
             "method": "GET",
+            "header": {"User-Agent": "User Server.LatencyUpdater"}
         },
         "log deleter": {
             "start_after": 10,

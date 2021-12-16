@@ -94,6 +94,7 @@ def create_latency_update_runner(
     interval: float = 60 * 5,
     target: str = f"http://127.0.0.1:{Config['port']}",
     method: str = "GET",
+    header: dict[str, str] = None,
 ) -> Thread:
     """
     Creates a thread which automatically updates the latency displayed on statuspage.io.
@@ -108,18 +109,22 @@ def create_latency_update_runner(
         The target to ping.
     method: str
         The method which should be used for the target.
+    header: dict[str, str]
+        The header which should be used for the target.
 
     Returns
     -------
     Thread
     """
+    if header is None:
+        header = {"Authorization": "User Server.LatencyUpdater"}
 
     @error_logger(retry_timeout=60)
     def runner():
         sleep(start_after)
         while True:
             t1 = perf_counter()
-            request(method, target)
+            request(method, target, headers=header)
             t2 = perf_counter()
 
             update_latency(ms=(t2 - t1) * 1000)
