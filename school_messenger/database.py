@@ -178,7 +178,7 @@ class AccountDB(DatabaseBase):
                     self.__TABLE_ACCOUNTS__, "name", name
                 ), "User already registered!"
                 id = generate_id(1)  # noqa
-                password = password + str(id)
+                password += str(id)
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
             except (AssertionError, ValueError):
@@ -208,7 +208,7 @@ class AccountDB(DatabaseBase):
                 name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
                 user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
                 assert user is not None, "Invalid Name!"
-                password = password + str(user[0])
+                password += str(user[0])
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
                 assert password == user[2], "Invalid Password!"
@@ -231,7 +231,7 @@ class AccountDB(DatabaseBase):
         with self as db:
             try:
                 user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
-                password = password + str(user[0])
+                password += str(user[0])
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
                 assert password == user[2], "Wrong Password!"
