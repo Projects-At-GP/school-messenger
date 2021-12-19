@@ -318,7 +318,12 @@ class MessageDB(DatabaseBase):
         if not (msg := self.findall(self.__TABLE_MESSAGES__, "id", id)):
             return
         with self as db:
-            db.execute(f"DELETE FROM {self.__TABLE_MESSAGES__} " f"WHERE id == {id}")
+            # fmt: off
+            db.execute(
+                f"DELETE FROM {self.__TABLE_MESSAGES__} " 
+                f"WHERE id == {id}"
+            )
+            # fmt: on
         return msg[0]
 
     def get_messages(self, maximum=20, before=-1, after=-1):
