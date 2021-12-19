@@ -72,9 +72,30 @@ class V3(VersionBase):
         @admin.add("DELETE", "PUT")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def user(request: APIRequest):
-            # DELETE -> delete acc (req. id)
+            if request.method == "DELETE":
+                if not all(
+                    [
+                        (id := request.get("Id", "null")).isnumeric(),  # noqa
+                    ]
+                ):
+                    if not database.account_delete(id=id):
+                        return 400, "Invalid `Id`! (Not in database or admin!)"
+                    return f"Account {id} successfully deleted."
+
             # PUT -> update acc (req. id, mode (cur. "admin" only))
-            return 501
+            if request.method == "PUT":
+                valid_modes = {"admin"}
+                if not all(
+                    [
+                        (id := request.get("Id", "null")).isnumeric(),  # noqa
+                        (mode := request.get("Mode", "invalid mode")) in valid_modes,
+                    ]
+                ):
+                    return (
+                        400,
+                        f"Invalid `Id` or `Mode`! (`Id` must be numeric! `Mode` must be in {', '.join(valid_modes)}!)",
+                    )
+                return 501
 
         @admin.add("DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)

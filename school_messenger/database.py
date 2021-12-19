@@ -217,32 +217,64 @@ class AccountDB(DatabaseBase):
             else:
                 return user[3]
 
-    def account_delete(self, token, password):
+    def account_delete(
+        self,
+        token: str = None,
+        password: str = None,
+        id: typing.Union[str, int] = None,  # noqa
+    ) -> bool:
         """
         Parameters
         ----------
-        token, password: str
+        token, password: str, optional
+        id: str, int, optional
 
         Returns
         -------
         bool
             Whether the account could be deleted.
         """
-        with self as db:
-            try:
-                user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
-                password += str(user[0])
-                password = sha512(password.encode("utf-8", "ignore"))
-                password = password.hexdigest()
-                assert password == user[2], "Wrong Password!"
-                db.execute(
-                    f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
-                    f"WHERE token=={token!r}"
-                )
-            except AssertionError:
-                return False
-            else:
-                return True
+        if token is not None and password is not None and id is None:
+            with self as db:
+                try:
+                    user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
+                    password += str(user[0])
+                    password = sha512(password.encode("utf-8", "ignore"))
+                    password = password.hexdigest()
+                    assert password == user[2], "Wrong Password!"
+                    db.execute(
+                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
+                        f"WHERE token=={token!r}"
+                    )
+                except AssertionError:
+                    return False
+                else:
+                    return True
+
+        elif token is None and password is None and id is not None:
+            with self as db:
+                try:
+                    assert (
+                        user := db.findone(self.__TABLE_ACCOUNTS__, "id", int(id))
+                    ), "Invalid id!"
+                    from .utils import get_id_type
+
+                    assert get_id_type(user[0]) != 31, "Is admin!"
+                    # fmt: off
+                    db.execute(
+                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
+                        f"WHERE id=={id}"
+                    )
+                    # fmt: on
+                except AssertionError:
+                    return False
+                else:
+                    return True
+
+        else:
+            raise ValueError(
+                "Invalid combination of following arguments: 'token', 'password', 'id'"
+            )
 
     def account_info(self, *, query=None, token=None):
         """
