@@ -79,8 +79,15 @@ class V3(VersionBase):
         @admin.add("DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
         def messages(request: APIRequest):
-            # DELETE -> delete message (req. id)
-            return 501
+            if not all(
+                [
+                    (id := request.get("Id", "null")).isnumeric(),  # noqa
+                ]
+            ):
+                return 400, "Incorrect `Id`! (Must be numeric!)"
+            if not (msg := database.delete_message(id)):
+                return 400, "Incorrect `Id`! (Not in database!)"
+            return {"msg": msg}
 
         @admin.add_request_check(401)
         @logs.add_request_check(401)

@@ -302,6 +302,25 @@ class MessageDB(DatabaseBase):
             db.add(self.__TABLE_MESSAGES__, (id, author, content))
             return str(id)
 
+    def delete_message(
+        self,
+        id: typing.Union[str, int],  # noqa
+    ) -> typing.Optional[tuple[int, int, str]]:
+        """
+        Parameters
+        ----------
+        id: str, int
+
+        Returns
+        -------
+        tuple[int, int, str], optional
+        """
+        if not (msg := self.findall(self.__TABLE_MESSAGES__, "id", id)):
+            return
+        with self as db:
+            db.execute(f"DELETE FROM {self.__TABLE_MESSAGES__} " f"WHERE id == {id}")
+        return msg[0]
+
     def get_messages(self, maximum=20, before=-1, after=-1):
         """
         Parameters
