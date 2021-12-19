@@ -86,7 +86,7 @@ class V3(VersionBase):
             ):
                 return 400, "Incorrect `Id`! (Must be numeric!)"
             if not (msg := database.delete_message(id)):
-                return 400, "Incorrect `Id`! (Not in database!)"
+                return 400, "Invalid `Id`! (Not in database!)"
             return {"msg": msg}
 
         @admin.add_request_check(401)

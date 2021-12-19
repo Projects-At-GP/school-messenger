@@ -315,16 +315,16 @@ class MessageDB(DatabaseBase):
         -------
         tuple[int, int, str], optional
         """
-        if not (msg := self.findall(self.__TABLE_MESSAGES__, "id", id)):
+        if not (msg := self.findone(self.__TABLE_MESSAGES__, "id", int(id))):
             return
         with self as db:
             # fmt: off
             db.execute(
                 f"DELETE FROM {self.__TABLE_MESSAGES__} " 
-                f"WHERE id == {id}"
+                f"WHERE id=={id}"
             )
             # fmt: on
-        return msg[0]
+        return msg
 
     def get_messages(self, maximum=20, before=-1, after=-1):
         """
