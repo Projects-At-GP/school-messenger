@@ -83,45 +83,45 @@ class DatabaseBase:
         """
         self._connection.commit()
 
-    def findone(self, table, collum=None, query=None):
+    def findone(self, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchone()
 
-    def findall(self, table, collum=None, query=None):
+    def findall(self, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchall()
 
-    def findmany(self, size, table, collum=None, query=None):
+    def findmany(self, size, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         size: int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchmany(size)
