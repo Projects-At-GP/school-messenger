@@ -14,6 +14,7 @@ __all__ = (
     "has_user_agent",
     "generate_id",
     "get_id_type",
+    "set_id_type",
     "get_user_type",
     "database",
     "create_log_deleter_runner",
@@ -169,6 +170,24 @@ def get_id_type(
     int
     """
     return (id & 65535) >> 11  # retrieves the type (WHITEPAPER.md)
+
+
+def set_id_type(
+    id: int,  # noqa
+    type: int,  # noqa
+) -> int:
+    """
+    Replaces the type-part in an ID with the given ``type``.
+
+    Parameters
+    ----------
+    id, type: int
+
+    Returns
+    -------
+    int
+    """
+    return ((id >> 16) << 16) + (type << 11) + (id & 2047)
 
 
 def get_user_type(request):

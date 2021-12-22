@@ -82,9 +82,10 @@ class V3(VersionBase):
                         return 400, "Invalid `Id`! (Not in database or admin!)"
                     return f"Account {id} successfully deleted."
 
-            # PUT -> update acc (req. id, mode (cur. "admin" only))
             if request.method == "PUT":
-                valid_modes = {"admin"}
+                valid_modes = {
+                    "admin": 31,
+                }
                 if not all(
                     [
                         (id := request.get("Id", "null")).isnumeric(),  # noqa
@@ -95,7 +96,8 @@ class V3(VersionBase):
                         400,
                         f"Invalid `Id` or `Mode`! (`Id` must be numeric! `Mode` must be in {', '.join(valid_modes)}!)",
                     )
-                return 501
+                new_id = database.change_account_type(id, valid_modes[mode])
+                return 202, {"id": str(new_id), "type": str(valid_modes[mode])}
 
         @admin.add("DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)

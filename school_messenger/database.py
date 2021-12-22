@@ -203,12 +203,14 @@ class AccountDB(DatabaseBase):
         -------
         str
         """
+        from .utils import set_id_type  # noqa
+
         with self as db:
             try:
                 name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
                 user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
                 assert user is not None, "Invalid Name!"
-                password += str(user[0])
+                password += str(set_id_type(user[0], 1))
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
                 assert password == user[2], "Invalid Password!"
@@ -298,6 +300,33 @@ class AccountDB(DatabaseBase):
             if data is None:
                 return ()
             return data[0], b64decode(data[1].encode("utf-8", "ignore")).decode("utf-8")
+
+    def change_account_type(
+        self,
+        id: typing.Union[str, int],  # noqa
+        type: typing.Union[str, int],  # noqa
+    ) -> int:
+        """
+        Parameters
+        ----------
+        id, type: str, int
+
+        Returns
+        -------
+        int
+        """
+        from .utils import set_id_type
+
+        new_id = set_id_type(int(id), int(type))
+        with self as db:
+            # fmt: off
+            db.execute(
+                f"UPDATE {self.__TABLE_ACCOUNTS__} "
+                f"SET id={new_id} "
+                f"WHERE id=={id}"
+            )
+            # fmt: on
+        return new_id
 
 
 class MessageDB(DatabaseBase):
