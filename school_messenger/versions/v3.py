@@ -80,7 +80,7 @@ class V3(VersionBase):
                 ):
                     if not database.account_delete(id=id):
                         return 400, "Invalid `Id`! (Not in database or admin!)"
-                    return f"Account {id} successfully deleted."
+                    return 204, f"Account {id} successfully deleted."
 
             if request.method == "PUT":
                 valid_modes = {
@@ -110,7 +110,7 @@ class V3(VersionBase):
                 return 400, "Incorrect `Id`! (Must be numeric!)"
             if not (msg := database.delete_message(id)):
                 return 400, "Invalid `Id`! (Not in database!)"
-            return {"msg": msg}
+            return {"id": str(msg[0]), "author": str(msg[1]), "content": msg[2]}
 
         @admin.add_request_check(401)
         @logs.add_request_check(401)

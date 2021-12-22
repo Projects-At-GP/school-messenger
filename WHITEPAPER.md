@@ -21,6 +21,10 @@
 - [Messages](#messages)
     - [Send](#send-messages)
     - [Fetch](#fetch-messages)
+- [Administration](#administration-endpoints)
+    - [Logs](#admin-logs)
+    - [Users](#admin-users)
+    - [Messages](#admin-messages)
 - [ID](#id)
     - [Technical](#id-technical)
     - [Types](#id-types)
@@ -47,6 +51,9 @@ The API is split into versions to keep "old" clients running, even if the struct
 
 #### v2
 `v2` is like `v1`, but *all keys in (json-) response* are ***lowercase***.
+
+#### v3
+`v3` has all features from `v2` and additionally some endpoints for admins.
 
 ## Communication
 ### Request
@@ -105,19 +112,25 @@ used to calculate the rate-limit, so look it all up closely.
 ## Account
 ### Account Info
 You can gain information about accounts by using the `users/info`-endpoint.
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 GET users/info
 Query:          <USER NAME OR USER ID>
 ```
+---
+
 If you want to know who you are (have only your token from [here](#get-token)) you can use the `users/whoami`-endpoint.
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 GET users/whoami
 ```
 All of these examples have the following response:
 
-> Versions: `v0`, `v1`, `v2`
+> Versions: `v0`, `v1`, `v2`, `v3`
 
 > Status: 200
 ```json
@@ -126,10 +139,13 @@ All of these examples have the following response:
   "id": "<USER ID>"
 }
 ```
+---
 
 ### Create Account
 You have to create an account to get an access token to use the messenger.
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 POST users/registration
 Name:           <YOUR NAME>
@@ -148,7 +164,7 @@ Password:       <YOUR PASSWORD>
 }
 ```
 
-> Versions: `v2`
+> Versions: `v2`, `v3`
 
 > Status: 201
 ```json
@@ -156,25 +172,30 @@ Password:       <YOUR PASSWORD>
   "token": "<TOKEN>"
 }
 ```
+---
 
 ### Delete Account
 Deletes your account.
-**THIS ACTION CANNOT MAKE UNDONE!!!**
-> Versions: `v0`, `v1`, `v2`
+**THIS ACTION CANNOT BE UNDONE!!!**
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 DELETE users/registration
 Password:       <YOUR PASSWORD>
 ```
 
 > Status: 204
-
+---
 
 ## Get Token
 Of course, you need an access token for the `Authorization`.
 There two ways to get the token:
-1. by [Registration](#create-account) you can read it from the response or
+1. on [registration](#create-account) you can read it from the response or
 2. by using the `users/me/token`-endpoint:
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 GET users/me/token
 Name:           <YOUR NAME>
@@ -191,7 +212,7 @@ Password:       <YOUR PASSWORD>
 }
 ```
 
-> Versions: `v2`
+> Versions: `v2`, `v3`
 
 > Status: 200
 ```json
@@ -199,19 +220,22 @@ Password:       <YOUR PASSWORD>
   "token": "<TOKEN>"
 }
 ```
+---
 
 **Recommendation: you can store the token after registration ;)**
 
 ## Messages
 ### Send Messages
 You can send messages by using the `messages`-endpoint.
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 POST messages
 Content:        Hello World!
 ```
 
-> Versions: `v0`, `v1`, `v2`
+> Versions: `v0`, `v1`, `v2`, `v3`
 
 > Status: 201
 ```json
@@ -219,10 +243,13 @@ Content:        Hello World!
   "id": "<MESSAGE ID>"
 }
 ```
+---
 
 ### Fetch Messages
 You can fetch messages by using the `messages`-endpoint.
-> Versions: `v0`, `v1`, `v2`
+
+---
+> Versions: `v0`, `v1`, `v2`, `v3`
 ```yml
 GET messages
 Amount:         <MAX. AMOUNT (-1 to get all) = 20>
@@ -230,7 +257,7 @@ Before:         <UTC-TIMESTAMP = -1>
 After:          <UTC-TIMESTAMP = -1>
 ```
 
-> Versions: `v0`, `v1`, `v2`
+> Versions: `v0`, `v1`, `v2`, `v3`
 
 > Status: 200
 ```json
@@ -248,6 +275,97 @@ After:          <UTC-TIMESTAMP = -1>
   ]
 }
 ```
+---
+
+## Administration Endpoints
+Here are all endpoints listed, which are only accessible if your "[id-type](#id-types)" is ``31``!
+
+### admin logs
+You can fetch messages by using the `messages`-endpoint.
+
+---
+> Versions: `v0`, `v3`
+```yml
+GET admin/logs
+Amount:         <MAX. AMOUNT (-1 to get all) = -1>
+Before:         <UTC-TIMESTAMP = -1>
+After:          <UTC-TIMESTAMP = -1>
+```
+
+> Versions: `v0`, `v3`
+
+> Status: 200
+```json
+{
+  "logs": [
+    {
+      "date": "<LOG DATE>",
+      "level": "<LOG LEVEL>",
+      "version": "<VERSION (from endpoint request)>",
+      "ip": "<IP (from endpoint request)>",
+      "message": "<LOG MESSAGE>",
+      "headers": "<LOG HEADERS>"
+    },
+    ...
+  ]
+}
+```
+---
+
+### admin users
+Update or delete an user.
+
+---
+> Versions: `v0`, `v3`
+```yml
+DELETE admin/user
+Id:             <USER ID>
+```
+
+> Versions: `v0`, `v3`
+
+> Status: 204
+---
+
+> Versions: `v0`, `v3`
+```yml
+PUT admin/user
+Id:             <USER ID>
+Mode:           <USER MODE (must be `admin`)>
+```
+
+> Versions: `v0`, `v3`
+
+> Status: 202
+```json
+{
+  "id": "<NEW ID>",
+  "type": "<NEW TYPE (numeric, not str as in request)>"
+}
+```
+---
+
+## admin messages
+Delete bad messages 🙃.
+
+---
+> Versions: `v0`, `v3`
+```yml
+DELETE admin/messages
+Id:             <MESSAGE ID>
+```
+
+> Versions: `v0`, `v3`
+
+> Status: 200
+```json
+{
+  "id": "<MESSAGE ID>",
+  "author": "<AUTHOR ID>",
+  "content": "<MESSAGE CONTENT>"
+}
+```
+---
 
 ## ID
 The IDs used in the messenger.
@@ -281,6 +399,7 @@ All used status codes by the messenger:
 |:----:|:----------------------------------------------------|:--------------:|
 | 200  | OK                                                  |      Yes       |
 | 201  | Created                                             |      Yes       |
+| 202  | Accepted                                            |      Yes       |
 | 204  | No Content (nothing to say...)                      |      Yes       |
 | 400  | Bad Request (mal formed or missing Header)          |       No       |
 | 401  | Unauthorized (missing `Authorization`/`User-Agent`) |       No       |
