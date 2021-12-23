@@ -1,4 +1,5 @@
-import sqlite3
+import aiosqlite
+import asyncio
 import typing
 from hashlib import sha512
 from secrets import token_bytes
@@ -18,19 +19,19 @@ class DatabaseBase:
         """
         self._database = database
 
-    def __enter__(self):
-        self._connection = sqlite3.connect(self._database)
-        self._cursor = self._connection.cursor()
+    async def __aenter__(self):
+        self._connection = await aiosqlite.connect(self._database)
+        self._cursor = await self._connection.cursor()
         return self
 
-    def __exit__(self, *_):
+    async def __aexit__(self, *_):
         try:
             # commit
-            self.commit()
+            await self.commit()
 
             # close
-            self._cursor.close()
-            self._connection.close()
+            await self._cursor.close()
+            await self._connection.close()
 
             # delete
             del self._cursor
@@ -44,74 +45,76 @@ class DatabaseBase:
     def database(self):
         return self._database
 
-    def execute(self, __sql, __parameters=()):
+    async def execute(self, __sql, __parameters=()):
         """
-        Shortcut for `sqlite3.Cursor.execute`
+        Shortcut for `aiosqlite.Cursor.execute`
 
         Parameters
         ----------
         __sql: str
         __parameters: typing.Iterable
         """
-        return self._cursor.execute(__sql, __parameters)
+        return await self._cursor.execute(__sql, __parameters)
 
-    def fetchone(self):
+    async def fetchone(self):
         """
-        Shortcut for `sqlite3.Cursor.fetchone`
+        Shortcut for `aiosqlite.Cursor.fetchone`
         """
-        return self._cursor.fetchone()
+        return await self._cursor.fetchone()
 
-    def fetchall(self):
+    async def fetchall(self):
         """
-        Shortcut for `sqlite3.Cursor.fetchall`
+        Shortcut for `aiosqlite.Cursor.fetchall`
         """
-        return self._cursor.fetchall()
+        return await self._cursor.fetchall()
 
-    def fetchmany(self, size):
+    async def fetchmany(self, size):
         """
-        Shortcut for `sqlite3.Cursor.fetchmany`
+        Shortcut for `aiosqlite.Cursor.fetchmany`
 
         Parameters
         ----------
         size: int
         """
-        return self._cursor.fetchmany(size)
+        return await self._cursor.fetchmany(size)
 
-    def commit(self):
+    async def commit(self):
         """
-        Shortcut for `sqlite3.Connection.commit`
+        Shortcut for `aiosqlite.Connection.commit`
         """
-        self._connection.commit()
+        await self._connection.commit()
 
-    def findone(self, table, column=None, query=None):
+    async def findone(self, table, column=None, query=None):
         """
         Parameters
         ----------
         table, column: str
         query: str, int
         """
-        with self as db:
-            if column is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
-            else:
-                db.execute(f"SELECT * FROM {table!r}")
-            return db.fetchone()
+        if column is not None and query is not None:
+            async with self:
+                await self.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
+        else:
+            async with self:
+                await self.execute(f"SELECT * FROM {table!r}")
+        return await self.fetchone()
 
-    def findall(self, table, column=None, query=None):
+    async def findall(self, table, column=None, query=None):
         """
         Parameters
         ----------
         table, column: str
         query: str, int
         """
-        with self as db:
-            if column is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
-            else:
-                db.execute(f"SELECT * FROM {table!r}")
-            return db.fetchall()
+        if column is not None and query is not None:
+            async with self:
+                await self.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
+        else:
+            async with self:
+                await self.execute(f"SELECT * FROM {table!r}")
+        return await self.fetchall()
 
-    def findmany(self, size, table, column=None, query=None):
+    async def findmany(self, size, table, column=None, query=None):
         """
         Parameters
         ----------
@@ -119,22 +122,21 @@ class DatabaseBase:
         query: str, int
         size: int
         """
-        with self as db:
-            if column is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
-            else:
-                db.execute(f"SELECT * FROM {table!r}")
-            return db.fetchmany(size)
+        if column is not None and query is not None:
+            await self.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
+        else:
+            await self.execute(f"SELECT * FROM {table!r}")
+        return await self.fetchmany(size)
 
-    def add(self, table, values):
+    async def add(self, table, values):
         """
         Parameters
         ----------
         table: str
         values: list
         """
-        with self as db:
-            db.execute(
+        async with self:
+            await self.execute(
                 f"""
             INSERT INTO {table!r} VALUES ({", ".join(f"{v!r}" for v in values)})
             """
@@ -144,9 +146,9 @@ class DatabaseBase:
 class AccountDB(DatabaseBase):
     __TABLE_ACCOUNTS__ = "accounts"
 
-    def setup_accounts(self):
-        with self as db:
-            db.execute(
+    async def setup_accounts(self):
+        async with self:
+            await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_ACCOUNTS__!r} (
                 'id'        BIGINT  UNIQUE  PRIMARY KEY,
@@ -157,7 +159,7 @@ class AccountDB(DatabaseBase):
             """
             )
 
-    def add_account(self, name, password):
+    async def add_account(self, name, password):
         """
         Parameters
         ----------
@@ -170,30 +172,31 @@ class AccountDB(DatabaseBase):
         """
         from .utils import generate_id  # noqa
 
-        with self as db:
-            try:
-                assert not name.isnumeric(), "This can be an ID!"
-                name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
-                assert not db.findone(
+        try:
+            assert not name.isnumeric(), "This can be an ID!"
+            name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
+            async with self:
+                assert not await self.findone(
                     self.__TABLE_ACCOUNTS__, "name", name
                 ), "User already registered!"
-                id = generate_id(1)  # noqa
-                password += str(id)
-                password = sha512(password.encode("utf-8", "ignore"))
-                password = password.hexdigest()
-            except (AssertionError, ValueError):
-                return False
-            else:
-                token = (
-                    b64encode(str(id).encode()).decode(),
-                    b64encode(token_bytes()).decode(),
-                )
-                token = token[0].rstrip("=") + "." + token[1].rstrip("=")
-                token = token.replace("+", "-").replace("/", "_")
-                db.add(self.__TABLE_ACCOUNTS__, (id, name, password, token))
-                return token
+            id = generate_id(1)  # noqa
+            password += str(id)
+            password = sha512(password.encode("utf-8", "ignore"))
+            password = password.hexdigest()
+        except (AssertionError, ValueError):
+            return False
+        else:
+            token = (
+                b64encode(str(id).encode()).decode(),
+                b64encode(token_bytes()).decode(),
+            )
+            token = token[0].rstrip("=") + "." + token[1].rstrip("=")
+            token = token.replace("+", "-").replace("/", "_")
+            async with self:
+                await self.add(self.__TABLE_ACCOUNTS__, (id, name, password, token))
+            return token
 
-    def account_token(self, name, password):
+    async def account_token(self, name, password):
         """
         Parameters
         ----------
@@ -201,25 +204,25 @@ class AccountDB(DatabaseBase):
 
         Returns
         -------
-        str
+        str, optional
         """
         from .utils import set_id_type  # noqa
 
-        with self as db:
-            try:
-                name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
-                user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
-                assert user is not None, "Invalid Name!"
-                password += str(set_id_type(user[0], 1))
-                password = sha512(password.encode("utf-8", "ignore"))
-                password = password.hexdigest()
-                assert password == user[2], "Invalid Password!"
-            except AssertionError:
-                return
-            else:
-                return user[3]
+        try:
+            name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
+            async with self:
+                user = await self.findone(self.__TABLE_ACCOUNTS__, "name", name)
+            assert user is not None, "Invalid Name!"
+            password += str(set_id_type(user[0], 1))
+            password = sha512(password.encode("utf-8", "ignore"))
+            password = password.hexdigest()
+            assert password == user[2], "Invalid Password!"
+        except AssertionError:
+            return
+        else:
+            return user[3]
 
-    def account_delete(
+    async def account_delete(
         self,
         token: str = None,
         password: str = None,
@@ -237,48 +240,46 @@ class AccountDB(DatabaseBase):
             Whether the account could be deleted.
         """
         if token is not None and password is not None and id is None:
-            with self as db:
-                try:
-                    user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
-                    password += str(user[0])
-                    password = sha512(password.encode("utf-8", "ignore"))
-                    password = password.hexdigest()
-                    assert password == user[2], "Wrong Password!"
-                    db.execute(
+            try:
+                async with self:
+                    user = await self.findone(self.__TABLE_ACCOUNTS__, "token", token)
+                password += str(user[0])
+                password = sha512(password.encode("utf-8", "ignore"))
+                password = password.hexdigest()
+                assert password == user[2], "Wrong Password!"
+                async with self:
+                    await self.execute(
                         f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
                         f"WHERE token=={token!r}"
                     )
-                except AssertionError:
-                    return False
-                else:
-                    return True
+            except AssertionError:
+                return False
+            else:
+                return True
 
         elif token is None and password is None and id is not None:
-            with self as db:
-                try:
-                    assert (
-                        user := db.findone(self.__TABLE_ACCOUNTS__, "id", int(id))
-                    ), "Invalid id!"
-                    from .utils import get_id_type
+            try:
+                assert (
+                    user := await self.findone(self.__TABLE_ACCOUNTS__, "id", int(id))
+                ), "Invalid id!"
+                from .utils import get_id_type
 
-                    assert get_id_type(user[0]) != 31, "Is admin!"
-                    # fmt: off
-                    db.execute(
-                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
-                        f"WHERE id=={id}"
+                assert get_id_type(user[0]) != 31, "Is admin!"
+                async with self:
+                    await self.execute(
+                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} WHERE id=={id}"
                     )
-                    # fmt: on
-                except AssertionError:
-                    return False
-                else:
-                    return True
+            except AssertionError:
+                return False
+            else:
+                return True
 
         else:
             raise ValueError(
                 "Invalid combination of following arguments: 'token', 'password', 'id'"
             )
 
-    def account_info(self, *, query=None, token=None):
+    async def account_info(self, *, query=None, token=None):
         """
         Parameters
         ----------
@@ -288,20 +289,19 @@ class AccountDB(DatabaseBase):
         -------
         tuple[int, str]
         """
-        with self as db:
-            if query is not None:
-                if query.isnumeric():
-                    data = db.findone(self.__TABLE_ACCOUNTS__, "id", int(query))
-                else:
-                    query = b64encode(query.encode("utf-8", "ignore")).decode("utf-8")
-                    data = db.findone(self.__TABLE_ACCOUNTS__, "name", query)
+        if query is not None:
+            if query.isnumeric():
+                data = await self.findone(self.__TABLE_ACCOUNTS__, "id", int(query))
             else:
-                data = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
-            if data is None:
-                return ()
-            return data[0], b64decode(data[1].encode("utf-8", "ignore")).decode("utf-8")
+                query = b64encode(query.encode("utf-8", "ignore")).decode("utf-8")
+                data = await self.findone(self.__TABLE_ACCOUNTS__, "name", query)
+        else:
+            data = await self.findone(self.__TABLE_ACCOUNTS__, "token", token)
+        if data is None:
+            return ()
+        return data[0], b64decode(data[1].encode("utf-8", "ignore")).decode("utf-8")
 
-    def change_account_type(
+    async def change_account_type(
         self,
         id: typing.Union[str, int],  # noqa
         type: typing.Union[str, int],  # noqa
@@ -318,23 +318,21 @@ class AccountDB(DatabaseBase):
         from .utils import set_id_type
 
         new_id = set_id_type(int(id), int(type))
-        with self as db:
-            # fmt: off
-            db.execute(
+        async with self:
+            await self.execute(
                 f"UPDATE {self.__TABLE_ACCOUNTS__} "
                 f"SET id={new_id} "
                 f"WHERE id=={id}"
             )
-            # fmt: on
         return new_id
 
 
 class MessageDB(DatabaseBase):
     __TABLE_MESSAGES__ = "messages"
 
-    def setup_messages(self):
-        with self as db:
-            db.execute(
+    async def setup_messages(self):
+        async with self:
+            await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_MESSAGES__!r} (
                 'id'        BIGINT  UNIQUE  PRIMARY KEY,
@@ -344,7 +342,7 @@ class MessageDB(DatabaseBase):
             """
             )
 
-    def add_message(self, author, content):
+    async def add_message(self, author, content):
         """
         Parameters
         ----------
@@ -357,13 +355,12 @@ class MessageDB(DatabaseBase):
         """
         from .utils import generate_id  # noqa
 
-        with self as db:
-            id = generate_id(2)  # noqa
-            content = b64encode(content.encode("utf-8", "ignore")).decode("utf-8")
-            db.add(self.__TABLE_MESSAGES__, (id, author, content))
-            return str(id)
+        id = generate_id(2)  # noqa
+        content = b64encode(content.encode("utf-8", "ignore")).decode("utf-8")
+        await self.add(self.__TABLE_MESSAGES__, (id, author, content))
+        return str(id)
 
-    def delete_message(
+    async def delete_message(
         self,
         id: typing.Union[str, int],  # noqa
     ) -> typing.Optional[tuple[int, int, str]]:
@@ -376,18 +373,13 @@ class MessageDB(DatabaseBase):
         -------
         tuple[int, int, str], optional
         """
-        if not (msg := self.findone(self.__TABLE_MESSAGES__, "id", int(id))):
+        if not (msg := await self.findone(self.__TABLE_MESSAGES__, "id", int(id))):
             return
-        with self as db:
-            # fmt: off
-            db.execute(
-                f"DELETE FROM {self.__TABLE_MESSAGES__} " 
-                f"WHERE id=={id}"
-            )
-            # fmt: on
+        async with self:
+            await self.execute(f"DELETE FROM {self.__TABLE_MESSAGES__} WHERE id=={id}")
         return msg
 
-    def get_messages(self, maximum=20, before=-1, after=-1):
+    async def get_messages(self, maximum=20, before=-1, after=-1):
         """
         Parameters
         ----------
@@ -408,18 +400,18 @@ class MessageDB(DatabaseBase):
         else:
             after = (after - 1609455600000) << 16
 
-        with self as db:
-            db.execute(
+        async with self:
+            await self.execute(
                 f"SELECT * FROM {self.__TABLE_MESSAGES__!r} "
                 f"WHERE {before} > id > {after} ORDER BY id DESC"
             )
-            msgs = db.fetchmany(maximum)
-            return [
-                (str(msg[0]), msg[1], b64decode(msg[2].encode("utf-8")).decode())
-                for msg in msgs
-            ]
+            msgs = await self.fetchmany(maximum)
+        return [
+            (str(msg[0]), msg[1], b64decode(msg[2].encode("utf-8")).decode())
+            for msg in msgs
+        ]
 
-    def delete_old_messages(
+    async def delete_old_messages(
         self,
         up_to: typing.Union[datetime, int],
         *,
@@ -450,14 +442,14 @@ class MessageDB(DatabaseBase):
                 up_to = up_to.timestamp() * 1000
             up_to = int(up_to - 1609455600000) << 16
 
-        with self as db:
+        async with self:
             # fmt: off
-            db.execute(
+            await self.execute(
                 f"SELECT null FROM {self.__TABLE_MESSAGES__} "
                 f"WHERE id < {up_to}"
             )
-            many = len(db.fetchall())
-            db.execute(
+            many = len([r for r in await self.fetchall()])
+            await self.execute(
                 f"DELETE FROM {self.__TABLE_MESSAGES__} "
                 f"WHERE id < {up_to}"
             )
@@ -472,7 +464,7 @@ class MessageDB(DatabaseBase):
         date = datetime.fromtimestamp(((up_to >> 16) + 1609455600000) / 1000).isoformat(
             sep=" "
         )
-        log_db.add_log(
+        await log_db.add_log(
             level=log_db.LOG_LEVEL["INFO"],
             version=None,
             ip=None,
@@ -498,9 +490,9 @@ class LogDB(DatabaseBase):
         super().__init__(database)
         self._log_level = log_level
 
-    def setup_logs(self):
-        with self as db:
-            db.execute(
+    async def setup_logs(self):
+        async with self:
+            await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_LOGS__!r} (
                 'date'      TEXT    PRIMARY KEY,
@@ -513,7 +505,7 @@ class LogDB(DatabaseBase):
             """
             )
 
-    def add_log(self, level, version, ip, msg, headers):
+    async def add_log(self, level, version, ip, msg, headers):
         """
         Parameters
         ----------
@@ -523,25 +515,24 @@ class LogDB(DatabaseBase):
         headers: dict, optional
         """
         if level >= self._log_level:
-            with self as db:
-                now = datetime.utcnow().isoformat(sep=" ")
-                ip = ip or "nA"
-                version = version or "nA"
-                msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
-                headers = b64encode(
-                    str(headers or {}).encode("utf-8", "ignore")
-                ).decode("utf-8")
-                db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg, headers))
-                print(
-                    f"\033[32m{now}\033[0m\t"
-                    f"\033[31m{level}\033[0m\t"
-                    f"\033[36m{version}\033[0m\t"
-                    f"\033[37m{ip:15}\033[0m\t"
-                    f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
-                    f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m"
-                )
+            now = datetime.utcnow().isoformat(sep=" ")
+            ip = ip or "nA"
+            version = version or "nA"
+            msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
+            headers = b64encode(str(headers or {}).encode("utf-8", "ignore")).decode(
+                "utf-8"
+            )
+            await self.add(self.__TABLE_LOGS__, (now, level, version, ip, msg, headers))
+            print(
+                f"\033[32m{now}\033[0m\t"
+                f"\033[31m{level}\033[0m\t"
+                f"\033[36m{version}\033[0m\t"
+                f"\033[37m{ip:15}\033[0m\t"
+                f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
+                f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m"
+            )
 
-    def get_logs(self, maximum=-1, before=-1, after=-1):
+    async def get_logs(self, maximum=-1, before=-1, after=-1):
         """
         Parameters
         ----------
@@ -560,25 +551,25 @@ class LogDB(DatabaseBase):
         else:
             after = datetime.fromtimestamp(after / 1000)
 
-        with self as db:
-            db.execute(
+        async with self:
+            await self.execute(
                 f"SELECT * FROM {self.__TABLE_LOGS__!r} "
                 f"WHERE {before.isoformat(sep=' ')!r} > date > {after.isoformat(sep=' ')!r} ORDER BY date DESC"
             )
-            logs = db.fetchmany(maximum)
-            return [
-                (
-                    log[0],
-                    str(log[1]),
-                    log[2],
-                    log[3],
-                    b64decode(log[4].encode("utf-8")).decode(),
-                    b64decode(log[5].encode("utf-8")).decode(),
-                )
-                for log in logs
-            ]
+            logs = await self.fetchmany(maximum)
+        return [
+            (
+                log[0],
+                str(log[1]),
+                log[2],
+                log[3],
+                b64decode(log[4].encode("utf-8")).decode(),
+                b64decode(log[5].encode("utf-8")).decode(),
+            )
+            for log in logs
+        ]
 
-    def delete_old_logs(self, up_to: typing.Union[datetime, int]):
+    async def delete_old_logs(self, up_to: typing.Union[datetime, int]):
         """
         Deletes old logs.
 
@@ -596,18 +587,18 @@ class LogDB(DatabaseBase):
         if isinstance(up_to, (int, float)):
             up_to = datetime.utcnow() - timedelta(days=up_to)
 
-        with self as db:
-            db.execute(
+        async with self:
+            await self.execute(
                 f"SELECT null FROM {self.__TABLE_LOGS__} "
                 f"WHERE date < {up_to.isoformat(sep=' ')!r}"
             )
-            many = len(db.fetchall())
-            db.execute(
+            many = len([r for r in await self.fetchall()])
+            await self.execute(
                 f"DELETE FROM {self.__TABLE_LOGS__} "
                 f"WHERE date < {up_to.isoformat(sep=' ')!r}"
             )
 
-        self.add_log(
+        await self.add_log(
             level=self.LOG_LEVEL["INFO"],
             version=None,
             ip=None,
@@ -625,6 +616,8 @@ class DataBase(AccountDB, MessageDB, LogDB):
 
     def __init__(self, database, log_level=0):
         super().__init__(database=database, log_level=log_level)
-        self.setup_accounts()
-        self.setup_messages()
-        self.setup_logs()
+        asyncio.gather(
+            self.setup_accounts(),
+            self.setup_messages(),
+            self.setup_logs(),
+        )

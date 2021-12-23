@@ -2,4 +2,5 @@ git+https://github.com/AlbertUnruh/NAA-API.git#egg=NAA
 git+https://github.com/AlbertUnruh/AlbertUnruhUtils.py.git#egg=AlbertUnruhUtils
 
 redis~=3.5.3
-requests
+requests~=2.26.0
+aiosqlite~=0.17.0
