@@ -23,7 +23,4 @@ The specification can be looked up in the [WhitePaper](WHITEPAPER.md).
 
 
 # Note:
-The server 'll be rewritten to be asynchronous to improve speed.
-Due to this the code might not be working and if you run into trouble the
-[last non-asynchronous version](https://github.com/Projects-At-GP/school-messenger/tree/53ec2200f776581ecab809a93709c1070dc1a8b3)
-should work.
+The server 'll be rewritten in a separate branch to be asynchronous to improve speed.
