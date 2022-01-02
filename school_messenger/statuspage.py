@@ -1,8 +1,9 @@
-from threading import Thread
-from time import time, sleep, perf_counter
-from requests import request
+import asyncio
+import typing
+from time import time, perf_counter
+from aiohttp import request, ClientConnectorError
 from .config import Config
-from .utils import database, error_logger
+from .utils import database, error_logger, get_error
 
 
 __all__ = (
@@ -49,13 +50,13 @@ def build_header(
     }
 
 
-def update_latency(
+async def update_latency(
     *,
     ms: float,
     timestamp: int = None,
     metric: str = METRIC_LATENCY,
     key: str = API_KEY,
-):
+) -> None:
     """
     Updates the latency-metric on StatusPage.io.
 
@@ -76,15 +77,15 @@ def update_latency(
         metric=metric,
     )
     data = {
-        "data[timestamp]": timestamp or time(),
-        "data[value]": ms,
+        "data[timestamp]": str(timestamp or time()),
+        "data[value]": str(ms),
     }
 
-    response = request("POST", url=url, headers=header, params=data)
-
-    lvl = 2 + (not response.ok)  # 3 if requests fails
-    database.add_log(
-        level=lvl, version=None, ip=None, msg=response.text, headers={**header, **data}
+    async with request("POST", url=url, headers=header, params=data) as response:
+        lvl = 2 + (not response.ok)  # 3 if requests fails
+        text = response.text
+    await database.add_log(
+        level=lvl, version=None, ip=None, msg=text, headers={**header, **data}
     )
 
 
@@ -95,7 +96,7 @@ def create_latency_update_runner(
     target: str = f"http://127.0.0.1:{Config['port']}",
     method: str = "GET",
     header: dict[str, str] = None,
-) -> Thread:
+) -> typing.Coroutine:
     """
     Creates a thread which automatically updates the latency displayed on statuspage.io.
 
@@ -114,27 +115,31 @@ def create_latency_update_runner(
 
     Returns
     -------
-    Thread
+    typing.Coroutine
     """
     if header is None:
         header = {"Authorization": "User Server.LatencyUpdater"}
 
     @error_logger(retry_timeout=60)
-    def runner():
-        sleep(start_after)
+    async def runner():
+        await asyncio.sleep(start_after)
         while True:
             t1 = perf_counter()
-            request(method, target, headers=header)
-            t2 = perf_counter()
+            try:
+                async with request(method, target, headers=header):
+                    t2 = perf_counter()
+                    # close session again
+            except ClientConnectorError as e:
+                await database.add_log(
+                    level=5,
+                    version=None,
+                    ip=None,
+                    msg=e.strerror,
+                    headers={"ts": time(), "error": get_error(e)},
+                )
+            else:
+                await update_latency(ms=(t2 - t1) * 1000)
 
-            update_latency(ms=(t2 - t1) * 1000)
+            await asyncio.sleep(interval)
 
-            sleep(interval)
-
-    updater = Thread(
-        target=runner,
-        name="<Thread: Automatic Latency Updater>",
-        daemon=True,
-    )
-    updater.start()
-    return updater
+    return runner()
