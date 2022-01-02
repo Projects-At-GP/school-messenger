@@ -1,14 +1,14 @@
+import asyncio
 import datetime
 import traceback
 import typing
 import functools
-from time import sleep
-from threading import Thread
 from .database import DataBase
 from .config import Config
 
 
 __all__ = (
+    "get_error",
     "error_logger",
     "is_authorized",
     "has_user_agent",
@@ -25,13 +25,35 @@ __all__ = (
 database = DataBase(Config["database"]["file"], Config["database"]["log level"])
 
 
+def get_error(
+    error: Exception,
+) -> str:
+    """
+    Returns the Error/Exception-Feedback which normally appears in STDOUT.
+
+    Parameters
+    ----------
+    error: Exception
+        The Error/Exception which was raised.
+
+    Returns
+    -------
+    str
+    """
+    output = "".join(traceback.format_exception(None, error, error.__traceback__))
+    return output.rstrip("\n")
+
+
+_C = typing.TypeVar("_C", bound=typing.Callable[[...], typing.Coroutine])
+
+
 def error_logger(
     *,
     log_level: int = database.LOG_LEVEL["ERROR"],
     retry_on_error: bool = True,
     retry_timeout: typing.Optional[float] = 0,
     raise_on_error: bool = False,
-) -> typing.Callable[[typing.Callable], typing.Callable]:
+) -> typing.Callable[[_C], _C]:
     """
     Logs errors and restarts the task if needed.
 
@@ -48,7 +70,7 @@ def error_logger(
 
     Returns
     -------
-    typing.Callable[[typing.Callable], typing.Callable]
+    typing.Callable[[_C], _C]
     """
     if retry_timeout is None:
         retry_timeout = 0.0
@@ -59,39 +81,37 @@ def error_logger(
         """
         Parameters
         ----------
-        clb: callable
+        clb: typing.Callable[[...], typing.Coroutine]
 
         Returns
         -------
-        callable
+        typing.Callable[[...], typing.Coroutine]
         """
 
-        def inner(*args, **kwargs):
+        async def inner(*args, **kwargs):
             while True:
                 try:
-                    return clb(*args, **kwargs)
+                    return await clb(*args, **kwargs)
                 except Exception as e:
-                    database.add_log(
+                    await database.add_log(
                         level=log_level,
                         version=None,
                         ip=None,
-                        msg="".join(
-                            traceback.format_exception(None, e, e.__traceback__)
-                        ).rstrip("\n"),
+                        msg=get_error(e),
                         headers={"retry": retry_on_error, "timeout": retry_timeout},
                     )
                     if raise_on_error:
                         raise
                     if not retry_on_error:
                         return
-                    sleep(retry_timeout)
+                    await asyncio.sleep(retry_timeout)
 
         return functools.update_wrapper(inner, clb)
 
     return outer
 
 
-def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
+async def is_authorized(request, *, authorization_key="Authorization", valid=("User",)):
     """
     Parameters
     ----------
@@ -107,7 +127,7 @@ def is_authorized(request, *, authorization_key="Authorization", valid=("User",)
         assert (token := request.headers.get(authorization_key, "")), "Missing Header!"
         assert token.startswith(valid), "Missing Clarification!"
         assert len(token.split()) == 2, "Missing Token! (Just 'User' etc. ...)"
-        assert database.account_info(token=token.split()[1]), "Invalid Token!"
+        assert await database.account_info(token=token.split()[1]), "Invalid Token!"
         return True
     except AssertionError:
         return False
@@ -190,7 +210,7 @@ def set_id_type(
     return ((id >> 16) << 16) + (type << 11) + (id & 2047)
 
 
-def get_user_type(request):
+async def get_user_type(request):
     """
     Parameters
     ----------
@@ -204,7 +224,7 @@ def get_user_type(request):
     user_type = "over_ip"  # default value
     token = (request.get("Authorization", default="/").split() + [""])[1]
     if token:
-        data = database.account_info(token=token)
+        data = await database.account_info(token=token)
         if data:
             user_id = data[0]
             raw_user_type = get_id_type(user_id)
@@ -222,9 +242,9 @@ def create_log_deleter_runner(
     up_to: typing.Union[datetime.datetime, int] = 7,
     start_after: float = 5,
     interval: float = 60 * 60,
-) -> Thread:
+) -> typing.Coroutine:
     """
-    Creates a thread which automatically deletes old logs.
+    Creates a Coroutine which automatically deletes old logs.
 
     Parameters
     ----------
@@ -238,23 +258,17 @@ def create_log_deleter_runner(
 
     Returns
     -------
-    Thread
+    typing.Coroutine
     """
 
     @error_logger()
-    def runner():
-        sleep(start_after)
+    async def runner():
+        await asyncio.sleep(start_after)
         while True:
-            database.delete_old_logs(up_to=up_to)
-            sleep(interval)
+            await database.delete_old_logs(up_to=up_to)
+            await asyncio.sleep(interval)
 
-    deleter = Thread(
-        target=runner,
-        name="<Thread: Automatic Log Deleter>",
-        daemon=True,
-    )
-    deleter.start()
-    return deleter
+    return runner()
 
 
 def create_message_deleter_runner(
@@ -262,9 +276,9 @@ def create_message_deleter_runner(
     up_to: typing.Union[datetime.datetime, int] = 7,
     start_after: float = 5,
     interval: float = 60 * 60,
-) -> Thread:
+) -> typing.Coroutine:
     """
-    Creates a thread which automatically deletes old messages.
+    Creates a Coroutine which automatically deletes old messages.
 
     Parameters
     ----------
@@ -278,20 +292,14 @@ def create_message_deleter_runner(
 
     Returns
     -------
-    Thread
+    typing.Coroutine
     """
 
     @error_logger()
-    def runner():
-        sleep(start_after)
+    async def runner():
+        await asyncio.sleep(start_after)
         while True:
-            database.delete_old_messages(up_to=up_to)
-            sleep(interval)
+            await database.delete_old_messages(up_to=up_to)
+            await asyncio.sleep(interval)
 
-    deleter = Thread(
-        target=runner,
-        name="<Thread: Automatic Message Deleter>",
-        daemon=True,
-    )
-    deleter.start()
-    return deleter
+    return runner()
