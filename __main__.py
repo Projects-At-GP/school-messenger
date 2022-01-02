@@ -1,3 +1,4 @@
+import asyncio
 from json import load
 
 import NAA
@@ -30,7 +31,7 @@ AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.11.13.000"
 
 
 @error_logger(log_level=5, raise_on_error=True)
-def check_lib_versions():
+async def check_lib_versions():
     if NAA.__version__ < NAA_REQUIRED_MIN_VERSION:
         raise RuntimeError(
             "NAA out of date! (require at least version %s instead of %s)"
@@ -44,7 +45,7 @@ def check_lib_versions():
         )
 
 
-check_lib_versions()  # in a call because so errors can be logged
+asyncio.run(check_lib_versions())  # in a call because so errors can be logged
 
 
 api = API(
@@ -72,13 +73,19 @@ def _(*_):
     return APIResponse(default_response)
 
 
-# create background tasks
-create_latency_update_runner(**Config["runner"]["latency updater"])
-create_log_deleter_runner(**Config["runner"]["log deleter"])
-create_message_deleter_runner(**Config["runner"]["message deleter"])
-
 run = error_logger(log_level=5, retry_timeout=60)(api.run_api)
-run(
-    debug=Config["server"]["debug"],
-    reload=Config["server"]["reload"],
-)
+
+
+async def run_main_processes():
+    # create background tasks
+    await asyncio.gather(
+        create_latency_update_runner(**Config["runner"]["latency updater"]),
+        create_log_deleter_runner(**Config["runner"]["log deleter"]),
+        create_message_deleter_runner(**Config["runner"]["message deleter"]),
+    )
+
+    # run server
+    run(**Config["server"])
+
+
+asyncio.run(run_main_processes())
