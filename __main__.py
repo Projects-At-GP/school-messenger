@@ -6,7 +6,7 @@ from NAA.models import APIResponse
 from NAA.web import API
 
 import AlbertUnruhUtils
-from AlbertUnruhUtils.ratelimit import ServerRateLimit
+from AlbertUnruhUtils.asynchronous.ratelimit import ServerRateLimit
 
 
 from school_messenger.config import Config, redis
@@ -27,7 +27,7 @@ from school_messenger.versions import (
 
 
 NAA_REQUIRED_MIN_VERSION = "2021.12.16.001"
-AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.11.13.000"
+AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2022.01.03.002"
 
 
 @error_logger(log_level=5, raise_on_error=True)
@@ -77,15 +77,17 @@ run = error_logger(log_level=5, retry_timeout=60)(api.run_api)
 
 
 async def run_main_processes():
-    # create background tasks
+    # fmt: off
     await asyncio.gather(
+        # create background tasks
         create_latency_update_runner(**Config["runner"]["latency updater"]),
         create_log_deleter_runner(**Config["runner"]["log deleter"]),
         create_message_deleter_runner(**Config["runner"]["message deleter"]),
-    )
 
-    # run server
-    run(**Config["server"])
+        # run server
+        run(**Config["server"]),
+    )
+    # fmt: on
 
 
 asyncio.run(run_main_processes())
