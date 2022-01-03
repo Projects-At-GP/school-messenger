@@ -77,15 +77,15 @@ def error_logger(
     elif not isinstance(retry_timeout, float):
         retry_timeout = float(retry_timeout)  # type: ignore
 
-    def outer(clb, /):
+    def outer(clb: _C, /) -> _C:
         """
         Parameters
         ----------
-        clb: typing.Callable[[...], typing.Coroutine]
+        clb: _C
 
         Returns
         -------
-        typing.Callable[[...], typing.Coroutine]
+        _C
         """
 
         async def inner(*args, **kwargs):
