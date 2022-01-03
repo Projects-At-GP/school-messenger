@@ -13,12 +13,12 @@ class V0(VersionBase):
 
         @api.add(ignore_invalid_methods=True)
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def users(_):
+        async def users(_):
             ...
 
         @users.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def info(request: APIRequest):
+        async def info(request: APIRequest):
             if not all([(query := request.get("Query"))]):
                 return 400, "Missing `Query`!"
             return {"name": "", "id": ""}
@@ -27,7 +27,7 @@ class V0(VersionBase):
 
         @users.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def whoami(request: APIRequest):
+        async def whoami(request: APIRequest):
             token = request.get("Authorization").split()[1]  # noqa
             return {"name": "", "id": ""}
 
@@ -35,7 +35,7 @@ class V0(VersionBase):
 
         @users.add("POST", "DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def registration(request: APIRequest):
+        async def registration(request: APIRequest):
             if request.method == "POST":
                 if not all(
                     [
@@ -55,12 +55,12 @@ class V0(VersionBase):
 
         @users.add(ignore_invalid_methods=True)
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def me(_):
+        async def me(_):
             ...
 
         @me.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def token(request: APIRequest):
+        async def token(request: APIRequest):
             if not all(
                 [
                     (name := request.get("Name", "")),
@@ -72,7 +72,7 @@ class V0(VersionBase):
 
         @api.add("POST", "GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def messages(request: APIRequest):
+        async def messages(request: APIRequest):
             if request.method == "GET":
                 if not all(
                     [

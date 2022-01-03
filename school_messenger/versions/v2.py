@@ -11,7 +11,7 @@ __all__ = ("V2",)
 class V2(VersionBase):
     def __init__(self, api: API):
         @api.add_global_response_check()
-        def lower_all_json(response: APIResponse):
+        async def lower_all_json(response: APIResponse):
             json = {}
             for k, v in response.response.items():
                 json[k.lower()] = v

@@ -17,12 +17,12 @@ class V3(VersionBase):
 
         @api.add(ignore_invalid_methods=True)
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def admin(_: APIRequest):
+        async def admin(_: APIRequest):
             ...
 
         @admin.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def logs(request: APIRequest):
+        async def logs(request: APIRequest):
             if not all(
                 [
                     (amount := request.get("Amount", "-1"))
@@ -34,7 +34,7 @@ class V3(VersionBase):
                     (after := request.get("After", "-1")).removeprefix("-").isnumeric(),
                 ]
             ):
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["INFO"],
                     version=request.version,
                     ip=request.ip,
@@ -46,7 +46,7 @@ class V3(VersionBase):
                     "Incorrect `Amount`, `Before` and/or `After`! (They must all be numeric!)",
                 )
             logs = []  # noqa
-            (data) = database.get_logs(int(amount), int(before), int(after))
+            (data) = await database.get_logs(int(amount), int(before), int(after))
             for log in data:
                 logs.append(
                     {
@@ -58,7 +58,7 @@ class V3(VersionBase):
                         "headers": log[5],
                     }
                 )
-            database.add_log(
+            await database.add_log(
                 level=database.LOG_LEVEL["INFO"],
                 version=request.version,
                 ip=request.ip,
@@ -71,14 +71,14 @@ class V3(VersionBase):
 
         @admin.add("DELETE", "PUT")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def user(request: APIRequest):
+        async def user(request: APIRequest):
             if request.method == "DELETE":
                 if not all(
                     [
                         (id := request.get("Id", "null")).isnumeric(),  # noqa
                     ]
                 ):
-                    if not database.account_delete(id=id):
+                    if not await database.account_delete(id=id):
                         return 400, "Invalid `Id`! (Not in database or admin!)"
                     return 204, f"Account {id} successfully deleted."
 
@@ -96,19 +96,19 @@ class V3(VersionBase):
                         400,
                         f"Invalid `Id` or `Mode`! (`Id` must be numeric! `Mode` must be in {', '.join(valid_modes)}!)",
                     )
-                new_id = database.change_account_type(id, valid_modes[mode])
+                new_id = await database.change_account_type(id, valid_modes[mode])
                 return 202, {"id": str(new_id), "type": str(valid_modes[mode])}
 
         @admin.add("DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def messages(request: APIRequest):
+        async def messages(request: APIRequest):
             if not all(
                 [
                     (id := request.get("Id", "null")).isnumeric(),  # noqa
                 ]
             ):
                 return 400, "Incorrect `Id`! (Must be numeric!)"
-            if not (msg := database.delete_message(id)):
+            if not (msg := await database.delete_message(id)):
                 return 400, "Invalid `Id`! (Not in database!)"
             return {"id": str(msg[0]), "author": str(msg[1]), "content": msg[2]}
 
@@ -116,5 +116,5 @@ class V3(VersionBase):
         @logs.add_request_check(401)
         @user.add_request_check(401)
         @messages.add_request_check(401)
-        def is_admin(request: APIRequest) -> bool:
-            return get_user_type(request) == 31  # == "admin"
+        async def is_admin(request: APIRequest) -> bool:
+            return await get_user_type(request) == 31  # == "admin"

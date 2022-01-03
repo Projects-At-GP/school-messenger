@@ -15,8 +15,8 @@ class V1(VersionBase):
         api.add_global_response_check()(lambda response: print(response))
 
         @api.add_global_request_check(-1)
-        def log_requests(request: APIRequest):
-            database.add_log(
+        async def log_requests(request: APIRequest):
+            await database.add_log(
                 level=database.LOG_LEVEL["DEBUG"],
                 version=request.version,
                 ip=request.ip,
@@ -27,17 +27,17 @@ class V1(VersionBase):
 
         @api.add(ignore_invalid_methods=True)
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def users(_):
+        async def users(_):
             ...
 
         @users.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def info(request: APIRequest):
+        async def info(request: APIRequest):
             if not all([(query := request.get("Query"))]):
                 return 400, "Missing `Query`!"
-            data = database.account_info(query=query)
+            data = await database.account_info(query=query)
             if not data:
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["INFO"],
                     version=request.version,
                     ip=request.ip,
@@ -51,16 +51,16 @@ class V1(VersionBase):
 
         @users.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def whoami(request: APIRequest):
+        async def whoami(request: APIRequest):
             token = request.get("Authorization").split()[1]  # noqa
-            data = database.account_info(token=token)
+            data = await database.account_info(token=token)
             return {"name": data[1], "id": str(data[0])}
 
         whoami.add_request_check(401)(is_authorized)
 
         @users.add("POST", "DELETE")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def registration(request: APIRequest):
+        async def registration(request: APIRequest):
             if request.method == "POST":
                 if not all(
                     [
@@ -68,7 +68,7 @@ class V1(VersionBase):
                         (password := request.get("Password", "")),
                     ]
                 ):
-                    database.add_log(
+                    await database.add_log(
                         level=database.LOG_LEVEL["INFO"],
                         version=request.version,
                         ip=request.ip,
@@ -76,9 +76,9 @@ class V1(VersionBase):
                         headers=request.headers,
                     )
                     return 400, "Missing `Name` and/or `Password`!"
-                data = database.add_account(name, password)
+                data = await database.add_account(name, password)
                 if data is False:
-                    database.add_log(
+                    await database.add_log(
                         level=database.LOG_LEVEL["INFO"],
                         version=request.version,
                         ip=request.ip,
@@ -86,7 +86,7 @@ class V1(VersionBase):
                         headers=request.headers,
                     )
                     return 400, "Incorrect `Name`! (Already registered or numeric!)"
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["INFO"],
                     version=request.version,
                     ip=request.ip,
@@ -96,15 +96,15 @@ class V1(VersionBase):
                 return 201, {"Token": data}
 
             if request.method == "DELETE":
-                if not is_authorized(request):
+                if not await is_authorized(request):
                     return 401
                 if not all([(password := request.get("Password", ""))]):
                     return 400, "Missing `Password`!"
                 token = request.get("Authorization").split()[1]  # noqa
-                name = database.account_info(token=token)[1]
-                data = database.account_delete(token, password)
+                name = await database.account_info(token=token)[1]
+                data = await database.account_delete(token, password)
                 if data is False:
-                    database.add_log(
+                    await database.add_log(
                         level=database.LOG_LEVEL["WARNING"],
                         version=request.version,
                         ip=request.ip,
@@ -112,7 +112,7 @@ class V1(VersionBase):
                         headers=request.headers,
                     )
                     return 401, "Password incorrect!"
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["INFO"],
                     version=request.version,
                     ip=request.ip,
@@ -123,19 +123,19 @@ class V1(VersionBase):
 
         @users.add(ignore_invalid_methods=True)
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def me(_):
+        async def me(_):
             ...
 
         @me.add("GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def token(request: APIRequest):
+        async def token(request: APIRequest):
             if not all(
                 [
                     (name := request.get("Name", "")),
                     (password := request.get("Password", "")),
                 ]
             ):
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["DEBUG"],
                     version=request.version,
                     ip=request.ip,
@@ -143,9 +143,9 @@ class V1(VersionBase):
                     headers=request.headers,
                 )
                 return 400, "Missing `Name` and/or `Password`!"
-            data = database.account_token(name, password)
+            data = await database.account_token(name, password)
             if data is None:
-                database.add_log(
+                await database.add_log(
                     level=database.LOG_LEVEL["DEBUG"],
                     version=request.version,
                     ip=request.ip,
@@ -157,7 +157,7 @@ class V1(VersionBase):
 
         @api.add("POST", "GET")
         @ServerRateLimit(Config["ratelimits"], get_user_type, redis=redis)
-        def messages(request: APIRequest):
+        async def messages(request: APIRequest):
             if request.method == "GET":
                 if not all(
                     [
@@ -172,7 +172,7 @@ class V1(VersionBase):
                         .isnumeric(),
                     ]
                 ):
-                    database.add_log(
+                    await database.add_log(
                         level=database.LOG_LEVEL["DEBUG"],
                         version=request.version,
                         ip=request.ip,
@@ -185,10 +185,12 @@ class V1(VersionBase):
                     )
                 cached_authors = {}
                 msgs = []
-                (data) = database.get_messages(int(amount), int(before), int(after))
+                (data) = await database.get_messages(
+                    int(amount), int(before), int(after)
+                )
                 for msg in data:
                     if msg[1] not in cached_authors:
-                        cached_authors[msg[1]] = database.account_info(
+                        cached_authors[msg[1]] = await database.account_info(
                             query=str(msg[1])
                         )
                     msgs.append(
@@ -205,7 +207,7 @@ class V1(VersionBase):
 
             if request.method == "POST":
                 if not all([(content := request.get("Content", ""))]):
-                    database.add_log(
+                    await database.add_log(
                         level=database.LOG_LEVEL["DEBUG"],
                         version=request.version,
                         ip=request.ip,
@@ -213,10 +215,10 @@ class V1(VersionBase):
                         headers=request.headers,
                     )
                     return 400, "Missing `Content`!"
-                author = database.account_info(
+                author = await database.account_info(
                     token=request.get("Authorization").split()[1]
                 )
-                data = database.add_message(author[0], content)
+                data = await database.add_message(author[0], content)
                 return 201, {"ID": data}
 
         messages.add_request_check(401)(is_authorized)
