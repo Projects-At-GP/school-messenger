@@ -1,3 +1,4 @@
+import sqlite3  # just for sqlite3.ProgrammingError if the database was already closed
 import aiosqlite
 import asyncio
 import typing
@@ -38,7 +39,7 @@ class DatabaseBase:
             del self._connection
 
         # already triggered?
-        except AttributeError:
+        except (AttributeError, sqlite3.ProgrammingError):
             pass
 
     @property
@@ -151,10 +152,10 @@ class AccountDB(DatabaseBase):
             await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_ACCOUNTS__!r} (
-                'id'        BIGINT  UNIQUE  PRIMARY KEY,
-                'name'      TEXT    UNIQUE,
-                'password'  TEXT    UNIQUE,
-                'token'     TEXT    UNIQUE
+                'id'        BIGINT  UNIQUE  PRIMARY KEY     NOT NULL,
+                'name'      TEXT    UNIQUE                  NOT NULL,
+                'password'  TEXT    UNIQUE                  NOT NULL,
+                'token'     TEXT    UNIQUE                  NOT NULL
             )
             """
             )
@@ -335,9 +336,9 @@ class MessageDB(DatabaseBase):
             await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_MESSAGES__!r} (
-                'id'        BIGINT  UNIQUE  PRIMARY KEY,
-                'author'    BIGINT,
-                'content'   TEXT
+                'id'        BIGINT  UNIQUE  PRIMARY KEY     NOT NULL,
+                'author'    BIGINT                          NOT NULL,
+                'content'   TEXT                            NOT NULL
             )
             """
             )
@@ -495,12 +496,12 @@ class LogDB(DatabaseBase):
             await self.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS {self.__TABLE_LOGS__!r} (
-                'date'      TEXT    PRIMARY KEY,
-                'level'     INTEGER,
-                'version'   TEXT,
-                'ip'        TEXT,
-                'log'       TEXT,
-                'headers'   TEXT
+                'date'      TEXT    PRIMARY KEY     NOT NULL,
+                'level'     INTEGER                 NOT NULL,
+                'version'   TEXT                    NOT NULL,
+                'ip'        TEXT                    NOT NULL,
+                'log'       TEXT                    NOT NULL,
+                'headers'   TEXT                    NOT NULL
             )
             """
             )
@@ -616,7 +617,10 @@ class DataBase(AccountDB, MessageDB, LogDB):
 
     def __init__(self, database, log_level=0):
         super().__init__(database=database, log_level=log_level)
-        asyncio.gather(
+        asyncio.run(self.setup_database_tables())
+
+    async def setup_database_tables(self):
+        await asyncio.gather(
             self.setup_accounts(),
             self.setup_messages(),
             self.setup_logs(),
