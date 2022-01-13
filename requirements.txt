@@ -1,5 +1,5 @@
 git+https://github.com/AlbertUnruh/NAA-API.git#egg=NAA
 git+https://github.com/AlbertUnruh/AlbertUnruhUtils.py.git#egg=AlbertUnruhUtils
 
-redis~=3.5.3
+redis~=4.0.1
 requests~=2.26.0
