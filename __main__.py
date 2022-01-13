@@ -26,7 +26,7 @@ from school_messenger.versions import (
 
 
 NAA_REQUIRED_MIN_VERSION = "2021.12.16.001"
-AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2021.11.13.000"
+AlbertUnruhUtils_REQUIRED_MIN_VERSION = "2022.01.08.004"
 
 
 @error_logger(log_level=5, raise_on_error=True)
