@@ -50,8 +50,44 @@ DEFAULT_CONFIG = {
             "amount": 60,
             "interval": 60,
             "timeout": 10
-        }
-    }
+        },
+        "over_ip": {
+            "amount": 10,
+            "interval": 60,
+            "timeout": 30
+        },
+    },
+
+    "statuspage.io": {
+        # must be set
+        "api key": "YOUR-API-KEY",
+        "page id": "YOUR-PAGE-ID",
+        "latency metric id": "YOUR-METRIC-ID",
+        # can be set (but isn't recommended)
+        "api base": "api.statuspage.io",
+        "api version": "/v1/",  # "/" is optional
+    },
+
+    # automated background tasks
+    "runner": {
+        "latency updater": {
+            "start_after": 15,
+            "interval": 60 * 5,  # 5 minutes
+            "target": f"http://127.0.0.1:{3333}",  # default port from this config
+            "method": "GET",
+            "header": {"User-Agent": "Server LatencyUpdater"}
+        },
+        "log deleter": {
+            "start_after": 10,
+            "interval": 60 * 60,  # 60 minutes / 1 hour
+            "up_to": 7,  # 7 days / 1 week
+        },
+        "message deleter": {
+            "start_after": 5,
+            "interval": 60 * 60,  # 60 minutes / 1 hour
+            "up_to": 7,  # 7 days / 1 week
+        },
+    },
 }
 # fmt: on
 

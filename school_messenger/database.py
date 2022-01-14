@@ -1,8 +1,9 @@
 import sqlite3
+import typing
 from hashlib import sha512
 from secrets import token_bytes
 from base64 import b64encode, b64decode
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 __all__ = ("DataBase",)
@@ -82,45 +83,45 @@ class DatabaseBase:
         """
         self._connection.commit()
 
-    def findone(self, table, collum=None, query=None):
+    def findone(self, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchone()
 
-    def findall(self, table, collum=None, query=None):
+    def findall(self, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchall()
 
-    def findmany(self, size, table, collum=None, query=None):
+    def findmany(self, size, table, column=None, query=None):
         """
         Parameters
         ----------
-        table, collum: str
+        table, column: str
         query: str, int
         size: int
         """
         with self as db:
-            if collum is not None and query is not None:
-                db.execute(f"SELECT * FROM {table!r} WHERE {collum}=={query!r}")
+            if column is not None and query is not None:
+                db.execute(f"SELECT * FROM {table!r} WHERE {column}=={query!r}")
             else:
                 db.execute(f"SELECT * FROM {table!r}")
             return db.fetchmany(size)
@@ -177,7 +178,7 @@ class AccountDB(DatabaseBase):
                     self.__TABLE_ACCOUNTS__, "name", name
                 ), "User already registered!"
                 id = generate_id(1)  # noqa
-                password = password + str(id)
+                password += str(id)
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
             except (AssertionError, ValueError):
@@ -202,12 +203,15 @@ class AccountDB(DatabaseBase):
         -------
         str
         """
+        from .utils import set_id_type  # noqa
+
         with self as db:
             try:
                 name = b64encode(name.encode("utf-8", "ignore")).decode("utf-8")
                 user = db.findone(self.__TABLE_ACCOUNTS__, "name", name)
                 assert user is not None, "Invalid Name!"
-                password = password + str(user[0])
+                password += str(user[0])
+                password += str(set_id_type(user[0], 1))
                 password = sha512(password.encode("utf-8", "ignore"))
                 password = password.hexdigest()
                 assert password == user[2], "Invalid Password!"
@@ -216,32 +220,64 @@ class AccountDB(DatabaseBase):
             else:
                 return user[3]
 
-    def account_delete(self, token, password):
+    def account_delete(
+        self,
+        token: str = None,
+        password: str = None,
+        id: typing.Union[str, int] = None,  # noqa
+    ) -> bool:
         """
         Parameters
         ----------
-        token, password: str
+        token, password: str, optional
+        id: str, int, optional
 
         Returns
         -------
         bool
             Whether the account could be deleted.
         """
-        with self as db:
-            try:
-                user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
-                password = password + str(user[0])
-                password = sha512(password.encode("utf-8", "ignore"))
-                password = password.hexdigest()
-                assert password == user[2], "Wrong Password!"
-                db.execute(
-                    f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
-                    f"WHERE token=={token!r}"
-                )
-            except AssertionError:
-                return False
-            else:
-                return True
+        if token is not None and password is not None and id is None:
+            with self as db:
+                try:
+                    user = db.findone(self.__TABLE_ACCOUNTS__, "token", token)
+                    password += str(user[0])
+                    password = sha512(password.encode("utf-8", "ignore"))
+                    password = password.hexdigest()
+                    assert password == user[2], "Wrong Password!"
+                    db.execute(
+                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
+                        f"WHERE token=={token!r}"
+                    )
+                except AssertionError:
+                    return False
+                else:
+                    return True
+
+        elif token is None and password is None and id is not None:
+            with self as db:
+                try:
+                    assert (
+                        user := db.findone(self.__TABLE_ACCOUNTS__, "id", int(id))
+                    ), "Invalid id!"
+                    from .utils import get_id_type
+
+                    assert get_id_type(user[0]) != 31, "Is admin!"
+                    # fmt: off
+                    db.execute(
+                        f"DELETE FROM {self.__TABLE_ACCOUNTS__!r} "
+                        f"WHERE id=={id}"
+                    )
+                    # fmt: on
+                except AssertionError:
+                    return False
+                else:
+                    return True
+
+        else:
+            raise ValueError(
+                "Invalid combination of following arguments: 'token', 'password', 'id'"
+            )
 
     def account_info(self, *, query=None, token=None):
         """
@@ -265,6 +301,33 @@ class AccountDB(DatabaseBase):
             if data is None:
                 return ()
             return data[0], b64decode(data[1].encode("utf-8", "ignore")).decode("utf-8")
+
+    def change_account_type(
+        self,
+        id: typing.Union[str, int],  # noqa
+        type: typing.Union[str, int],  # noqa
+    ) -> int:
+        """
+        Parameters
+        ----------
+        id, type: str, int
+
+        Returns
+        -------
+        int
+        """
+        from .utils import set_id_type
+
+        new_id = set_id_type(int(id), int(type))
+        with self as db:
+            # fmt: off
+            db.execute(
+                f"UPDATE {self.__TABLE_ACCOUNTS__} "
+                f"SET id={new_id} "
+                f"WHERE id=={id}"
+            )
+            # fmt: on
+        return new_id
 
 
 class MessageDB(DatabaseBase):
@@ -301,6 +364,30 @@ class MessageDB(DatabaseBase):
             db.add(self.__TABLE_MESSAGES__, (id, author, content))
             return str(id)
 
+    def delete_message(
+        self,
+        id: typing.Union[str, int],  # noqa
+    ) -> typing.Optional[tuple[int, int, str]]:
+        """
+        Parameters
+        ----------
+        id: str, int
+
+        Returns
+        -------
+        tuple[int, int, str], optional
+        """
+        if not (msg := self.findone(self.__TABLE_MESSAGES__, "id", int(id))):
+            return
+        with self as db:
+            # fmt: off
+            db.execute(
+                f"DELETE FROM {self.__TABLE_MESSAGES__} " 
+                f"WHERE id=={id}"
+            )
+            # fmt: on
+        return msg
+
     def get_messages(self, maximum=20, before=-1, after=-1):
         """
         Parameters
@@ -315,12 +402,12 @@ class MessageDB(DatabaseBase):
             # 18446744073709551615 -> 1111111111111111111111111111111111111111111111111111111111111111
             before = 18446744073709551615
         else:
-            before = ((before - 1609455600000) << 15) + 65535
+            before = ((before - 1609455600000) << 16) + 65535
         if after == -1:
             # 0 -> 0000000000000000000000000000000000000000000000000000000000000000
             after = 0
         else:
-            after = (after - 1609455600000) << 15
+            after = (after - 1609455600000) << 16
 
         with self as db:
             db.execute(
@@ -332,6 +419,69 @@ class MessageDB(DatabaseBase):
                 (str(msg[0]), msg[1], b64decode(msg[2].encode("utf-8")).decode())
                 for msg in msgs
             ]
+
+    def delete_old_messages(
+        self,
+        up_to: typing.Union[datetime, int],
+        *,
+        already_id: bool = False,
+    ) -> int:
+        """
+        Deletes old messages.
+
+        Parameters
+        ----------
+        up_to: datetime, int  # in days if int and not already_id
+            Is datetime is given all messages until the date 'll be deleted.
+            Otherwise, the messages older than n days 'll be deleted.
+            The above-mentioned behavior is only active if already_id is *not*
+            False (already_id=True), otherwise up_to is treated as a final id.
+        already_id: bool
+            Whether `up_to` should *not* be converted to an id.
+
+        Returns
+        -------
+        int
+            The amount of deleted messages.
+        """
+        if not already_id:
+            if isinstance(up_to, int):
+                up_to = datetime.now() - timedelta(days=up_to)
+            if isinstance(up_to, datetime):
+                up_to = up_to.timestamp() * 1000
+            up_to = int(up_to - 1609455600000) << 16
+
+        with self as db:
+            # fmt: off
+            db.execute(
+                f"SELECT null FROM {self.__TABLE_MESSAGES__} "
+                f"WHERE id < {up_to}"
+            )
+            many = len(db.fetchall())
+            db.execute(
+                f"DELETE FROM {self.__TABLE_MESSAGES__} "
+                f"WHERE id < {up_to}"
+            )
+            # fmt: on
+
+        # if we run this class directly and not from :class:`DataBase`
+        if not isinstance(self, LogDB):
+            log_db = LogDB(self.database)
+        else:
+            log_db = self
+
+        date = datetime.fromtimestamp(((up_to >> 16) + 1609455600000) / 1000).isoformat(
+            sep=" "
+        )
+        log_db.add_log(
+            level=log_db.LOG_LEVEL["INFO"],
+            version=None,
+            ip=None,
+            msg=f"{many} messages deleted from database",
+            headers={"reason": f"older than {date}"},
+        )
+
+        return many
 
 
 class LogDB(DatabaseBase):
@@ -369,17 +519,19 @@ class LogDB(DatabaseBase):
         Parameters
         ----------
         level: int
-        version, ip, msg: str
-        headers: dict
+        version, ip: str, optional
+        msg: str
+        headers: dict, optional
         """
         if level >= self._log_level:
             with self as db:
                 now = datetime.utcnow().isoformat(sep=" ")
                 ip = ip or "nA"
+                version = version or "nA"
                 msg = b64encode(msg.encode("utf-8", "ignore")).decode("utf-8")
-                headers = b64encode(str(headers).encode("utf-8", "ignore")).decode(
-                    "utf-8"
-                )
+                headers = b64encode(
+                    str(headers or {}).encode("utf-8", "ignore")
+                ).decode("utf-8")
                 db.add(self.__TABLE_LOGS__, (now, level, version, ip, msg, headers))
                 print(
                     f"\033[32m{now}\033[0m\t"
@@ -389,6 +541,82 @@ class LogDB(DatabaseBase):
                     f"\033[35m{b64decode(msg.encode('utf-8')).decode('utf-8')}\033[0m\t"
                     f"\033[30m{b64decode(headers.encode('utf-8')).decode('utf-8')}\033[0m"
                 )
+
+    def get_logs(self, maximum=-1, before=-1, after=-1):
+        """
+        Parameters
+        ----------
+        maximum, before, after: int
+
+        Returns
+        -------
+        list[tuple[str, str, str, str, str, str]]
+        """
+        if before == -1:
+            before = datetime(9999, 12, 31, 23, 59, 59, 59)
+        else:
+            before = datetime.fromtimestamp(before / 1000)
+        if after == -1:
+            after = datetime(1, 1, 1)
+        else:
+            after = datetime.fromtimestamp(after / 1000)
+
+        with self as db:
+            db.execute(
+                f"SELECT * FROM {self.__TABLE_LOGS__!r} "
+                f"WHERE {before.isoformat(sep=' ')!r} > date > {after.isoformat(sep=' ')!r} ORDER BY date DESC"
+            )
+            logs = db.fetchmany(maximum)
+            return [
+                (
+                    log[0],
+                    str(log[1]),
+                    log[2],
+                    log[3],
+                    b64decode(log[4].encode("utf-8")).decode(),
+                    b64decode(log[5].encode("utf-8")).decode(),
+                )
+                for log in logs
+            ]
+
+    def delete_old_logs(self, up_to: typing.Union[datetime, int]):
+        """
+        Deletes old logs.
+
+        Parameters
+        ----------
+        up_to: datetime, int  # in days if int
+            Is datetime is given all logs until the date 'll be deleted.
+            Otherwise, the logs older than n days 'll be deleted.
+
+        Returns
+        -------
+        int
+            The amount of deleted logs.
+        """
+        if isinstance(up_to, (int, float)):
+            up_to = datetime.utcnow() - timedelta(days=up_to)
+
+        with self as db:
+            db.execute(
+                f"SELECT null FROM {self.__TABLE_LOGS__} "
+                f"WHERE date < {up_to.isoformat(sep=' ')!r}"
+            )
+            many = len(db.fetchall())
+            db.execute(
+                f"DELETE FROM {self.__TABLE_LOGS__} "
+                f"WHERE date < {up_to.isoformat(sep=' ')!r}"
+            )
+
+        self.add_log(
+            level=self.LOG_LEVEL["INFO"],
+            version=None,
+            ip=None,
+            msg=f"{many} logs deleted from log",
+            headers={"reason": f"older than {up_to.isoformat(sep=' ')}"},
+        )
+
+        return many
 
 
 class DataBase(AccountDB, MessageDB, LogDB):
