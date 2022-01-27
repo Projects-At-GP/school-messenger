@@ -6,8 +6,11 @@
 > ```markdown
 > **JUST FOR THOSE WHO ALREADY GOT IN CONTACT WITH US VIA A FLYER!**
 > ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> We know that the release in school is delayed and we hope you'not to mad.
-> The plan is to have the server ready until February. We'll announce the IP like the flyer in the SLZ.
+> ~~We know that the release in school is delayed and we hope you'not to mad.~~
+> ~~The plan is to have the server ready until February. We'll announce the IP like the flyer in the SLZ.~~
+> 
+> We currently have issues hosting the server. Which means that we cannot go online and we can't give an IP to you.
+> *If you can host the code in school please contact us.*
 > 
 > Happy Coding!
 > ```
